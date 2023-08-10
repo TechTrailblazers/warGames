@@ -26,4 +26,4 @@ Unit Tests: npm run test
 <!-- Lint Tests: npm run lint -->
 
 UML:
-<!-- ![UML](./UML.png) -->
+![UML](./UML.png)
