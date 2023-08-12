@@ -1,20 +1,17 @@
 {
-  "name": "caps",
+  "name": "caps-socket.io",
   "version": "1.0.0",
   "description": "",
-  "main": "eventPool.js",
+  "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test jest  --verbose --coverage "
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chance": "^1.1.11",
-    "event": "^1.0.0",
-    "events": "^3.3.0"
-  },
-  "devDependencies": {
-    "jest": "^29.6.2"
+    "jest": "^29.6.2",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2"
   }
 }

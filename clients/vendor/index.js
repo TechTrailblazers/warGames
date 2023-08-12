@@ -1,6 +1,6 @@
 'use strict';
 const { io } = require('socket.io-client');
-const vendorHandler = require('./handler');
+const events = require('../../utilities.js');
 
 const client = io('ws://localhost:3000/caps');
 
@@ -12,10 +12,11 @@ const payload = {
 client.emit(events.pickup, payload);
 
 client.on(events.announcement, (payload) => console.log(payload.message));
-client.on(events.pickUp, (payload) =>
+console.log(client.emit);
+client.on(events.pickedUp, (payload) =>
   console.log('The package has been picked up by the driver', payload.orderId)
 );
-client.on(events.pickUp, (payload) =>
+client.on(events.pickedUp, (payload) =>
   console.log('the package, is in transit', payload.orderId)
 );
 
