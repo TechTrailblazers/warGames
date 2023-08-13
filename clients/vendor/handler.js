@@ -1,27 +1,28 @@
-// 'use strict';
+const { chance, EventNames } = require('../../utilities');
 
-// const eventPool = require('../eventPool');
-// const Chance = require('chance');
-// const chance = new Chance();
+function sendPickup(events) {
+  const event = {
+    store: chance.city(),
+    orderId: chance.guid(),
+    customer: chance.name(),
+    address: chance.address(),
+  };
+  console.log('vendor request for package pickup', event);
+  events.emit(EventNames.pickup, event);
+}
 
-// function pickupEvent(storeName) {
-//   // const orderId = chance.guid();
-//   // const customerName = chance.name();
-//   // const address = chance.address({ short_suffix: true });
+function confirmedDelivery(orderId) {
+  console.log('Thank you for the delivery!', orderId);
+}
 
-//   const payload = {
-//     store: storeName,
-//     orderId: chance.guid(),
-//     customer: chance.name(),
-//     address: chance.address({ short_suffix: true }),
-//   };
-//   // console.log(`Vendor Module: Pickup event for ${storeName}`);
-//   eventPool.emit('pickup', payload);
-//   // console.log(payload);
-// }
+function startVendor(events) {
+  console.log('vendor has started');
+  events.on(EventNames.delivered, confirmedDelivery);
 
-// eventPool.on('delivered', (payload) => {
-//   console.log(`Thank you for your order ${payload.customer}`);
-// });
-
-// module.exports = { pickupEvent };
+  function ready() {
+    sendPickup(events);
+    setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
+  }
+  ready();
+}
+module.exports = { startVendor, toTest: { confirmedDelivery } };

@@ -1,54 +1,55 @@
 const { Server } = require('socket.io');
-const events = require('./utilities.js');
+const { EventNames, Queue } = require('./utilities.js');
 
 const io = new Server();
 
 io.listen(3000);
 
-const caps = io.of('/caps');
+const driverQueue = new Queue();
+const packageQueue = new Queue();
 
-function handlePickUp(payload, socket) {
-  console.log('the pickup was requested', payload.orderId);
-  socket.emit('received', { message: 'pickup acknowledged' });
-  caps.emit(events.ready, { message: 'a pickup is now ready', ...payload });
+function handlePickUp(payload) {
+  console.log('the pickup was requested for delivery', payload.orderId);
+  if (driverQueue.isEmpty()) {
+    packageQueue.enqueue(payload);
+  } else {
+    const driverSocket = driverQueue.dequeue();
+    driverSocket.emit(EventNames.pickup, payload);
+  }
 }
 
 function handleDelivered(payload) {
   console.log(`the package for ${payload.customerId} has been delivered`);
-  caps.emit(events.delivered, {
-    orderId: payload.orderId,
-    message: `the package for ${payload.customerId} has been delivered`,
-  });
+  io.emit(EventNames.delivered, payload);
 }
 
-function handlePickedUp(payload) {
-  console.log('the driver picked up the package', payload.orderId);
-  caps.emit(events.pickUp, payload);
-}
-
-function handleInTransit(payload) {
-  console.log('the package is in transit', payload.orderId);
-  caps.emit(events.inTransit, payload);
+function handleDriverReady(socket) {
+  console.log('driver #', socket.id, 'is ready');
+  if (packageQueue.isEmpty()) {
+    driverQueue.enqueue(socket);
+  } else {
+    const parcel = packageQueue.dequeue();
+    socket.emit(EventNames.pickup, parcel);
+  }
 }
 
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  socket.on(events.pickup, (payload) => handlePickUp(payload, socket));
-  socket.on(events.pickedUp, handlePickedUp);
-  socket.on(events.inTransit, handleInTransit);
+  socket.on(EventNames.pickup, handlePickUp);
   socket.on(events.delivered, handleDelivered);
+  socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
 }
 
 function startServer() {
+  io.on('connection', handleConnection);
   console.log('The server has been started');
-  caps.on('connection', handleConnection);
 }
 
 module.exports = {
   startServer,
-  handleInTransit,
-  handleDelivered,
   io,
-  caps,
+  handlePickUp,
+  handleDelivered,
+  handleConnection,
 };
