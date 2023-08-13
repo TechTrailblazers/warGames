@@ -1,14 +1,23 @@
-// const { client } = require('ws://localhost:3000/caps');
-const events = require('../../utilities');
+const { chance, EventNames } = require('../../utilities');
 
-const driverHandler = (payload, client) => {
-  console.log('The package is ready to be picked up');
-  setTimeout(() => {
-    client.emit(events.inTransit, payload);
-  }, 2000);
-  setTimeout(() => {
-    console.log('The package has been delivered');
-    client.emit(events.delivered, payload);
-  }, 5000);
-};
-module.exports = { driverHandler };
+function deliver(orderId, io) {
+  console.log('Driver finished delivery', orderId);
+  io.emit(EventNames.delivered, orderId);
+  io.emit(EventNames.ready);
+}
+
+function handlePickUp(payload, io) {
+  console.log('Driver received a pickup request!', payload.orderId);
+  setTimeout(
+    () => deliver(payload.orderId, io),
+    chance.integer({ min: 5000, max: 10000 })
+  );
+}
+
+function startDriver(io) {
+  console.log('Driver is started');
+  io.emit(EventNames.ready);
+  io.on(EventNames.pickup, (payload) => handlePickUp(payload, io));
+}
+
+module.exports = { startDriver, toTest: { deliver, handlePickUp } };
