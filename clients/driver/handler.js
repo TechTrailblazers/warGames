@@ -1,4 +1,7 @@
-const driverHandler = (payload) => {
+// const { client } = require('ws://localhost:3000/caps');
+const events = require('../../utilities');
+
+const driverHandler = (payload, client) => {
   console.log('The package is ready to be picked up');
   setTimeout(() => {
     client.emit(events.inTransit, payload);
