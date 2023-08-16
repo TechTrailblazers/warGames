@@ -63,7 +63,7 @@ function handleGetAll(storeName, socket) {
       socket.emit(EventNames.delivered, order);
     });
   } else if (storeName === 'acme-widgets') {
-    acmeSocket = sockets;
+    acmeSocket = socket;
     acmeDeliveryQueue.queue.forEach((order) => {
       socket.emit(EventNames.delivered, order);
     });
@@ -75,7 +75,7 @@ function handleConnection(socket) {
 
   socket.on(EventNames.pickup, handlePickUp);
   socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
-  socket.on(events.delivered, handleDelivered);
+  socket.on(EventNames.delivered, handleDelivered);
   socket.on('received', handleReceived);
   socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }

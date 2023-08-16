@@ -20,7 +20,7 @@ function sendPickup(events) {
 }
 
 function acknowledgedDelivery(payload, client) {
-  console.log('THank you for the delivery', payload.messageId);
+  console.log('Thank you for the delivery', payload.messageId);
   client.emit('received', payload);
 }
 
