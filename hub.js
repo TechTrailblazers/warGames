@@ -8,8 +8,14 @@ io.listen(3000);
 const driverQueue = new Queue();
 const packageQueue = new Queue();
 
+let flowerSocket = null;
+let acmeSocket = null;
+
+const flowersDeliveryQueue = new Queue();
+const acmeDeliveryQueue = new Queue();
+
 function handlePickUp(payload) {
-  console.log('the pickup was requested for delivery', payload.orderId);
+  console.log('the pickup was requested for delivery', payload.messageId);
   if (driverQueue.isEmpty()) {
     packageQueue.enqueue(payload);
   } else {
@@ -20,7 +26,14 @@ function handlePickUp(payload) {
 
 function handleDelivered(payload) {
   console.log(`the package for ${payload.customerId} has been delivered`);
-  io.emit(EventNames.delivered, payload);
+  if (payload.clientId === '1-800-flowers') {
+    flowersDeliveryQueue.enqueue(payload);
+    flowerSocket.emit(EventNames.delivered, payload);
+  }
+  if (payload.clientId === 'acme-widgets') {
+    acmeDeliveryQueue.enqueue(payload);
+    acmeSocket.emit(EventNames.delivered, payload);
+  }
 }
 
 function handleDriverReady(socket) {
@@ -33,12 +46,38 @@ function handleDriverReady(socket) {
   }
 }
 
+function handleReceived(payload) {
+  console.log('vendor acknowledged delivery', payload.messageId);
+  if (payload.clientId === '1-800-flowers') {
+    flowersDeliveryQueue.dequeue();
+  }
+  if (payload.clientId === 'acme-widgets') {
+    acmeDeliveryQueue.dequeue();
+  }
+}
+
+function handleGetAll(storeName, socket) {
+  if (storeName === '1-800-flowers') {
+    flowerSocket = socket;
+    flowersDeliveryQueue.queue.forEach((order) => {
+      socket.emit(EventNames.delivered, order);
+    });
+  } else if (storeName === 'acme-widgets') {
+    acmeSocket = sockets;
+    acmeDeliveryQueue.queue.forEach((order) => {
+      socket.emit(EventNames.delivered, order);
+    });
+  }
+}
+
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
   socket.on(EventNames.pickup, handlePickUp);
-  socket.on(events.delivered, handleDelivered);
   socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
+  socket.on(events.delivered, handleDelivered);
+  socket.on('received', handleReceived);
+  socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }
 
 function startServer() {

@@ -1,49 +1,42 @@
-// const driverHandler = require('./handler');
-// const eventPool = require('../eventPool');
+const { EventNames } = require('../../utilities');
+const {
+  toTest: { deliver, handlePickup },
+} = require('./handler.js');
 
-// jest.mock('../eventPool');
+// this test does not match the demo code, it is from my caps project, but you can use it as a reference
+jest.useFakeTimers();
 
-// // Helper function to simulate event emission
-// const simulateEvent = (eventName, payload) => {
-//   eventPool.emit(eventName, payload);
-// };
+describe('Tests the driver handler functions', () => {
+  test('Driver deliver', () => {
+    // Arrange
+    const io = { emit: jest.fn() };
 
-// describe('Driver Client Application Tests', () => {
-//   beforeEach(() => {
-//     jest.spyOn(console, 'log').mockImplementation(); // Mock console.log
-//     jest.clearAllMocks();
-//   });
+    // Act
+    deliver('1234', io);
 
-//   afterEach(() => {
-//     jest.restoreAllMocks(); // Restore original console.log after each test
-//   });
+    // Assert
+    expect(io.emit).toHaveBeenCalledWith(EventNames.delivered, '1234');
+  });
 
-//   test('Respond to pickup event by logging and emitting in-transit event', () => {
-//     const mockPayload = {
-//       store: 'test-store',
-//       orderId: 'test-order-id',
-//       customer: 'test-customer',
-//       address: 'test-address',
-//     };
-//     console.log(mockPayload);
+  test('Driver handlePickup', () => {
+    // Arrange
+    const io = { emit: jest.fn() };
 
-//     simulateEvent('in-transit', mockPayload);
-//     expect(console.log).toHaveBeenCalled();
-//     expect(eventPool.emit).toHaveBeenCalledWith('in-transit', mockPayload);
-//   });
+    // Act
+    handlePickup(
+      {
+        store: 'test',
+        orderId: '1234',
+        customer: 'customer',
+        address: '111 Main',
+      },
+      io
+    );
 
-//   test('Respond to in-transit event by logging and emitting delivered event', () => {
-//     const mockPayload = {
-//       store: 'test-store',
-//       orderId: 'test-order-id',
-//       customer: 'test-customer',
-//       address: 'test-address',
-//     };
-//     console.log(mockPayload);
+    // Timers - skip setTimeout
+    jest.runAllTimers();
 
-//     simulateEvent('delivered', mockPayload);
-
-//     expect(console.log).toHaveBeenCalled();
-//     expect(eventPool.emit).toHaveBeenCalledWith('delivered', mockPayload);
-//   });
-// });
+    // Assert
+    expect(io.emit).toHaveBeenCalledWith(EventNames.delivered, '1234');
+  });
+});
