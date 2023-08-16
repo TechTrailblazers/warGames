@@ -1,11 +1,11 @@
 # caps# basic-express-server
 
-LAB - 12
-Refactor with socket.io
+LAB - 13
+multi client with socket.io
 
 Author: Jonathan Brooks
 
-[Pull Request](https://github.com/jonbrooks01/caps-socket.io/pull/1)
+[Pull Request](https://github.com/jonbrooks01/caps-queues/pull/2)
 
 <!-- [deployed server](https://basic-server-4efy.onrender.com) -->
 
