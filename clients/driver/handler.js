@@ -1,23 +1,23 @@
 const { chance, EventNames } = require('../../utilities');
 
-function deliver(orderId, io) {
-  console.log('Driver finished delivery', orderId);
-  io.emit(EventNames.delivered, orderId);
-  io.emit(EventNames.ready);
+function deliver(payload, client) {
+  console.log('Driver finished delivery', payload.messageId);
+  client.emit(EventNames.delivered, payload);
+  client.emit(EventNames.ready);
 }
 
-function handlePickUp(payload, io) {
-  console.log('Driver received a pickup request!', payload.orderId);
+function handlePickup(payload, client) {
+  console.log('Driver received a pickup request!', payload.messageId);
   setTimeout(
-    () => deliver(payload.orderId, io),
+    () => deliver(payload, client),
     chance.integer({ min: 5000, max: 10000 })
   );
 }
 
-function startDriver(io) {
+function startDriver(client) {
   console.log('Driver is started');
-  io.emit(EventNames.ready);
-  io.on(EventNames.pickup, (payload) => handlePickUp(payload, io));
+  client.emit(EventNames.ready);
+  client.on(EventNames.pickup, (payload) => handlePickup(payload, client));
 }
 
-module.exports = { startDriver, toTest: { deliver, handlePickUp } };
+module.exports = { startDriver, toTest: { deliver, handlePickup } };

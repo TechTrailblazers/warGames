@@ -1,12 +1,12 @@
-const chance = require(chance);
+const chance = require('chance')();
 
 const EventNames = {
   pickup: 'pickUp',
+  delivered: ' packDelivered',
+  ready: 'ready',
   // pickedUp: 'driverPickedUp',
   // inTransit: 'inTransit',
-  delivered: ' packDelivered',
   // announcement: 'announcement',
-  ready: 'ready',
 };
 
 class Queue {
