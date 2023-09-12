@@ -1,13 +1,13 @@
 const { chance, EventNames } = require('../../utilities');
 
 function deliver(payload, client) {
-  console.log('Driver finished delivery', payload.messageId);
+  console.log('Country has been impacted', payload.messageId);
   client.emit(EventNames.delivered, payload);
   client.emit(EventNames.ready);
 }
 
 function handlePickup(payload, client) {
-  console.log('Driver received a pickup request!', payload.messageId);
+  console.log('Country Attack has incoming attack', payload.messageId);
   setTimeout(
     () => deliver(payload, client),
     chance.integer({ min: 5000, max: 10000 })
@@ -15,7 +15,7 @@ function handlePickup(payload, client) {
 }
 
 function startDriver(client) {
-  console.log('Driver is started');
+  console.log("Let's go!");
   client.emit(EventNames.ready);
   client.on(EventNames.pickup, (payload) => handlePickup(payload, client));
 }

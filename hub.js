@@ -26,11 +26,11 @@ function handlePickUp(payload) {
 
 function handleDelivered(payload) {
   console.log(`the package for ${payload.customerId} has been delivered`);
-  if (payload.clientId === '1-800-flowers') {
+  if (payload.clientId === chance.country({ full: true })) {
     flowersDeliveryQueue.enqueue(payload);
     flowerSocket.emit(EventNames.delivered, payload);
   }
-  if (payload.clientId === 'acme-widgets') {
+  if (payload.clientId === chance.country({ full: true })) {
     acmeDeliveryQueue.enqueue(payload);
     acmeSocket.emit(EventNames.delivered, payload);
   }
@@ -48,21 +48,21 @@ function handleDriverReady(socket) {
 
 function handleReceived(payload) {
   console.log('vendor acknowledged delivery', payload.messageId);
-  if (payload.clientId === '1-800-flowers') {
+  if (payload.clientId === chance.country({ full: true })) {
     flowersDeliveryQueue.dequeue();
   }
-  if (payload.clientId === 'acme-widgets') {
+  if (payload.clientId === chance.country({ full: true })) {
     acmeDeliveryQueue.dequeue();
   }
 }
 
 function handleGetAll(storeName, socket) {
-  if (storeName === '1-800-flowers') {
+  if (storeName === chance.country({ full: true })) {
     flowerSocket = socket;
     flowersDeliveryQueue.queue.forEach((order) => {
       socket.emit(EventNames.delivered, order);
     });
-  } else if (storeName === 'acme-widgets') {
+  } else if (storeName === chance.country({ full: true })) {
     acmeSocket = socket;
     acmeDeliveryQueue.queue.forEach((order) => {
       socket.emit(EventNames.delivered, order);
