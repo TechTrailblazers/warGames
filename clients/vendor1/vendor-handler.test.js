@@ -12,7 +12,10 @@ describe('tests the vendor functions', () => {
     sendPickup(io);
 
     //assert
-    expect(io.emit).toHaveBeenCalledWith(EventNames.pickup, expect.any(Object));
+    expect(io.emit).toHaveBeenCalledWith(
+      EventNames.gameStart,
+      expect.any(Object)
+    );
   }),
     test('should acknowledge delivery', () => {
       const clientMock = {

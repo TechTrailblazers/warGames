@@ -16,7 +16,7 @@ function sendPickup(client) {
     order: event,
   };
   console.log('Vender asking for pickup!', event);
-  client.emit(EventNames.pickup, payload);
+  client.emit(EventNames.gameStart, payload);
 }
 
 function acknowledgedDelivery(payload, client) {
