@@ -17,7 +17,9 @@ function handlePickup(payload, client) {
 function startDriver(client) {
   console.log("Let's go!");
   client.emit(EventNames.ready);
-  client.on(EventNames.pickup, (payload) => handlePickup(payload, client));
+  client.on(EventNames.enemyResponse, (payload) =>
+    handlePickup(payload, client)
+  );
 }
 
 module.exports = { startDriver, toTest: { deliver, handlePickup } };

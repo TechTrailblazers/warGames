@@ -15,7 +15,7 @@ const flowersDeliveryQueue = new Queue();
 const acmeDeliveryQueue = new Queue();
 
 function handlePickUp(payload) {
-  console.log('the pickup was requested for delivery', payload.messageId);
+  console.log('The attack is pending to hit', payload.messageId);
   if (driverQueue.isEmpty()) {
     packageQueue.enqueue(payload);
   } else {
@@ -57,7 +57,7 @@ function handleReceived(payload) {
 }
 
 function handleGetAll(storeName, socket) {
-  if (storeName === chance.country({ full: true })) {
+  if (storeName === clientId) {
     flowerSocket = socket;
     flowersDeliveryQueue.queue.forEach((order) => {
       socket.emit(EventNames.delivered, order);
@@ -73,7 +73,7 @@ function handleGetAll(storeName, socket) {
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  socket.on(EventNames.pickup, handlePickUp);
+  socket.on(EventNames.enemyResponse, handlePickUp);
   socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
   socket.on(EventNames.delivered, handleDelivered);
   socket.on('received', handleReceived);

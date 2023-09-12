@@ -8,6 +8,7 @@ const EventNames = {
   question3: '',
   question4: '',
   finalResult: ' packDelivered',
+  enemyResponse: 'enemyResponse',
 
   // pickedUp: 'driverPickedUp',
   // inTransit: 'inTransit',

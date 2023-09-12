@@ -13,13 +13,13 @@ function sendPickup(client) {
   };
 
   const payload = {
-    event: 'pickup',
+    event: 'enemyResponse',
     messageId: event.orderId,
     clientId: chance.country({ full: true }),
     order: event,
   };
   console.log('Waiting on enemy response', event);
-  client.emit(EventNames.pickup, payload);
+  client.emit(EventNames.enemyResponse, payload);
 }
 
 function acknowledgedDelivery(payload, client) {
@@ -29,7 +29,7 @@ function acknowledgedDelivery(payload, client) {
 
 function vendorStart(client) {
   console.log('Commencing attack!');
-  client.emit('getAll', 'acme-widgets');
+  client.emit('getAll', chance.country({ full: true }));
   client.on(EventNames.delivered, (payload) =>
     acknowledgedDelivery(payload, client)
   );
