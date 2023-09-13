@@ -14,13 +14,27 @@ let acmeSocket = null;
 const flowersDeliveryQueue = new Queue();
 const acmeDeliveryQueue = new Queue();
 
+// function handleAttack(payload) {
+//   console.log('The attack is pending to hit', payload.orderId);
+//   if (driverQueue.isEmpty()) {
+//     packageQueue.enqueue(payload);
+//   } else {
+//     const driverSocket = driverQueue.dequeue();
+//     driverSocket.emit(EventNames.pickup, payload);
+//   }
+// }
+
 function handleAttack(payload) {
-  console.log('The attack is pending to hit', payload.orderId);
-  if (driverQueue.isEmpty()) {
-    packageQueue.enqueue(payload);
+  if (payload && payload.orderId) {
+    console.log('The attack is pending to hit', payload.orderId);
+    if (driverQueue.isEmpty()) {
+      packageQueue.enqueue(payload);
+    } else {
+      const driverSocket = driverQueue.dequeue();
+      driverSocket.emit(EventNames.pickup, payload);
+    }
   } else {
-    const driverSocket = driverQueue.dequeue();
-    driverSocket.emit(EventNames.pickup, payload);
+    console.log('Invalid payload for attack:', payload);
   }
 }
 
