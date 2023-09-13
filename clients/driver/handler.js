@@ -1,25 +1,25 @@
 const { chance, EventNames } = require('../../utilities');
 
-function deliver(payload, client) {
+function userInput(payload, client) {
   console.log('Country has been impacted', payload.messageId);
-  client.emit(EventNames.delivered, payload);
-  client.emit(EventNames.ready);
+  client.emit(EventNames.deliveredAttack, payload);
+  client.emit(EventNames.userReady);
 }
 
-function handlePickup(payload, client) {
+function handleAttack(payload, client) {
   console.log('Country Attack has incoming attack', payload.messageId);
   setTimeout(
-    () => deliver(payload, client),
+    () => userInput(payload, client),
     chance.integer({ min: 5000, max: 10000 })
   );
 }
 
-function startDriver(client) {
+function startGame(client) {
   console.log("Let's go!");
-  client.emit(EventNames.ready);
+  client.emit(EventNames.gameStart);
   client.on(EventNames.enemyResponse, (payload) =>
-    handlePickup(payload, client)
+    handleAttack(payload, client)
   );
 }
 
-module.exports = { startDriver, toTest: { deliver, handlePickup } };
+module.exports = { startGame, toTest: { userInput, handleAttack } };

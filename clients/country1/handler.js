@@ -1,6 +1,6 @@
 const { chance, EventNames } = require('../../utilities');
 
-function sendPickup(client) {
+function sendCoordinates(client) {
   const event = {
     country: chance.country({ full: true }),
     coordinates: ` Attacking on coordinates: ${chance.coordinates({
@@ -22,23 +22,26 @@ function sendPickup(client) {
   client.emit(EventNames.enemyResponse, payload);
 }
 
-function acknowledgedDelivery(payload, client) {
+function acknowledgedAttack(payload, client) {
   console.log('Target Hit', payload.messageId);
   client.emit('received', payload);
 }
 
-function vendorStart(client) {
+function attackStarting(client) {
   console.log('Commencing attack!');
   client.emit('getAll', chance.country({ full: true }));
-  client.on(EventNames.delivered, (payload) =>
-    acknowledgedDelivery(payload, client)
+  client.on(EventNames.deliveredAttack, (payload) =>
+    acknowledgedAttack(payload, client)
   );
 
   function ready() {
-    sendPickup(client);
+    sendCoordinates(client);
     setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
   }
   ready();
 }
 
-module.exports = { vendorStart, toTest: { sendPickup, acknowledgedDelivery } };
+module.exports = {
+  attackStarting,
+  toTest: { sendCoordinates, acknowledgedAttack },
+};

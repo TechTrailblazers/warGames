@@ -14,8 +14,8 @@ let acmeSocket = null;
 const flowersDeliveryQueue = new Queue();
 const acmeDeliveryQueue = new Queue();
 
-function handlePickUp(payload) {
-  console.log('The attack is pending to hit', payload.messageId);
+function handleAttack(payload) {
+  console.log('The attack is pending to hit', payload.orderId);
   if (driverQueue.isEmpty()) {
     packageQueue.enqueue(payload);
   } else {
@@ -28,11 +28,11 @@ function handleDelivered(payload) {
   console.log(`the package for ${payload.customerId} has been delivered`);
   if (payload.clientId === chance.country({ full: true })) {
     flowersDeliveryQueue.enqueue(payload);
-    flowerSocket.emit(EventNames.delivered, payload);
+    flowerSocket.emit(EventNames.deliveredAttack, payload);
   }
   if (payload.clientId === chance.country({ full: true })) {
     acmeDeliveryQueue.enqueue(payload);
-    acmeSocket.emit(EventNames.delivered, payload);
+    acmeSocket.emit(EventNames.deliveredAttack, payload);
   }
 }
 
@@ -57,15 +57,15 @@ function handleReceived(payload) {
 }
 
 function handleGetAll(storeName, socket) {
-  if (storeName === clientId) {
+  if (storeName === payload.clientId) {
     flowerSocket = socket;
     flowersDeliveryQueue.queue.forEach((order) => {
-      socket.emit(EventNames.delivered, order);
+      socket.emit(EventNames.deliveredAttack, order);
     });
   } else if (storeName === chance.country({ full: true })) {
     acmeSocket = socket;
     acmeDeliveryQueue.queue.forEach((order) => {
-      socket.emit(EventNames.delivered, order);
+      socket.emit(EventNames.deliveredAttack, order);
     });
   }
 }
@@ -73,9 +73,9 @@ function handleGetAll(storeName, socket) {
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  socket.on(EventNames.enemyResponse, handlePickUp);
+  socket.on(EventNames.enemyResponse, handleAttack);
   socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
-  socket.on(EventNames.delivered, handleDelivered);
+  socket.on(EventNames.deliveredAttack, handleDelivered);
   socket.on('received', handleReceived);
   socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }
@@ -88,7 +88,7 @@ function startServer() {
 module.exports = {
   startServer,
   io,
-  handlePickUp,
+  handleAttack,
   handleDelivered,
   handleConnection,
 };
