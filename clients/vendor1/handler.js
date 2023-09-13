@@ -15,17 +15,17 @@ function sendPickup(client) {
     clientId: `acme-widgets`,
     order: event,
   };
-  console.log('Vender asking for pickup!', event);
+  console.log('Country sent attack', event);
   client.emit(EventNames.gameStart, payload);
 }
 
 function acknowledgedDelivery(payload, client) {
-  console.log('Thank you for the delivery!', payload.messageId);
+  console.log('Countries attack has hit!', payload.messageId);
   client.emit('received', payload);
 }
 
 function vendorStart(client) {
-  console.log('vendor has started');
+  console.log('Country has started their assault');
   client.emit('getAll', 'acme-widgets');
   client.on(EventNames.delivered, (payload) =>
     acknowledgedDelivery(payload, client)

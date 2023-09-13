@@ -16,18 +16,18 @@ let country2Socket = null;
 const country1AttackQueue = new Queue();
 const country2AttackQueue = new Queue();
 
-function handlePickUp(payload) {
-  console.log('the pickup was requested for delivery', payload.messageId);
+function handleGameStart(payload) {
+  console.log('The user has requested to start the game');
   if (userQueue.isEmpty()) {
     attackQueue.enqueue(payload);
   } else {
-    const driverSocket = userQueue.dequeue();
-    driverSocket.emit(EventNames.gameStart, payload);
+    const userSocket = userQueue.dequeue();
+    userSocket.emit(EventNames.gameStart, payload);
   }
 }
 
-function handleDelivered(payload) {
-  console.log(`the package for ${payload.customerId} has been delivered`);
+function handleDeliveredAttack(payload) {
+  console.log(`the attack for ${payload.customerId} has been confirmed`);
   if (payload.clientId === '1-800-flowers') {
     country1AttackQueue.enqueue(payload);
     country1Socket.emit(EventNames.delivered, payload);
@@ -38,18 +38,18 @@ function handleDelivered(payload) {
   }
 }
 
-function handleDriverReady(socket) {
-  console.log('driver #', socket.id, 'is ready');
+function handleUserReady(socket) {
+  console.log('User is ready to start');
   if (attackQueue.isEmpty()) {
     userQueue.enqueue(socket);
   } else {
-    const parcel = attackQueue.dequeue();
-    socket.emit(EventNames.gameStart, parcel);
+    const attack = attackQueue.dequeue();
+    socket.emit(EventNames.gameStart, attack);
   }
 }
 
 function handleReceived(payload) {
-  console.log('vendor acknowledged delivery', payload.messageId);
+  console.log('Country knows about the attack', payload.messageId);
   if (payload.clientId === '1-800-flowers') {
     country1AttackQueue.dequeue();
   }
@@ -75,9 +75,9 @@ function handleGetAll(storeName, socket) {
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  socket.on(EventNames.gameStart, handlePickUp);
-  socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
-  socket.on(EventNames.delivered, handleDelivered);
+  socket.on(EventNames.gameStart, handleGameStart);
+  socket.on(EventNames.ready, (payload) => handleUserReady(socket));
+  socket.on(EventNames.delivered, handleDeliveredAttack);
   socket.on('received', handleReceived);
   socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }
@@ -90,7 +90,7 @@ function startServer() {
 module.exports = {
   startServer,
   io,
-  handlePickUp,
-  handleDelivered,
+  handleGameStart,
+  handleDeliveredAttack,
   handleConnection,
 };

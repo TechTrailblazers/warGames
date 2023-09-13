@@ -2,11 +2,13 @@ const chance = require('chance')();
 
 const EventNames = {
   // pickup: 'pickUp',
+  ready: 'ready',
   gameStart: 'gameStart',
   question1: 'question1',
   question2: 'question2',
   question3: 'question3',
   question4: 'question4',
+  delivered: 'delivered',
   finalResult: 'finalResult',
 
   // pickedUp: 'driverPickedUp',

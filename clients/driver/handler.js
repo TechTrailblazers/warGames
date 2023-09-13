@@ -1,13 +1,13 @@
 const { chance, EventNames } = require('../../utilities');
 
 function deliver(payload, client) {
-  console.log('Driver finished delivery', payload.messageId);
+  console.log('Users attack has hit successfully', payload.messageId);
   client.emit(EventNames.delivered, payload);
   client.emit(EventNames.ready);
 }
 
-function handlePickup(payload, client) {
-  console.log('Driver received a pickup request!', payload.messageId);
+function handleGameStart(payload, client) {
+  console.log('User has sent attack!', payload.messageId);
   setTimeout(
     () => deliver(payload, client),
     chance.integer({ min: 5000, max: 10000 })
@@ -15,9 +15,11 @@ function handlePickup(payload, client) {
 }
 
 function startDriver(client) {
-  console.log('Driver is started');
+  console.log('User has Started Game');
   client.emit(EventNames.ready);
-  client.on(EventNames.gameStart, (payload) => handlePickup(payload, client));
+  client.on(EventNames.gameStart, (payload) =>
+    handleGameStart(payload, client)
+  );
 }
 
-module.exports = { startDriver, toTest: { deliver, handlePickup } };
+module.exports = { startDriver, toTest: { deliver, handleGameStart } };
