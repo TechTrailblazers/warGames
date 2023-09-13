@@ -16,8 +16,15 @@ let country2Socket = null;
 const country1AttackQueue = new Queue();
 const country2AttackQueue = new Queue();
 
+let consoleLogShown = false;
+let userConsoleLog = false;
+
 function handleGameStart(payload) {
-  console.log('The user has requested to start the game');
+  if (!consoleLogShown) {
+    console.log('The user has requested to start the game');
+    consoleLogShown = true;
+  }
+
   if (userQueue.isEmpty()) {
     attackQueue.enqueue(payload);
   } else {
@@ -39,7 +46,10 @@ function handleDeliveredAttack(payload) {
 }
 
 function handleUserReady(socket) {
-  console.log('User is ready to start');
+  if (!userConsoleLog) {
+    console.log('User is ready to start');
+    userConsoleLog = true;
+  }
   if (attackQueue.isEmpty()) {
     userQueue.enqueue(socket);
   } else {
