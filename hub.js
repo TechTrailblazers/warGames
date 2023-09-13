@@ -34,7 +34,7 @@ function handleGameStart(payload) {
 }
 
 function handleDeliveredAttack(payload, socket) {
-  console.log(`the attack for ${payload.clientId} has been confirmed`);
+  console.log(`the attack for ${payload.countryId} has been confirmed`);
   {
     country1AttackQueue.enqueue(payload);
     socket.emit(EventNames.delivered, payload);

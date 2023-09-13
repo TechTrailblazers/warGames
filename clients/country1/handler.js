@@ -8,7 +8,8 @@ function sendCoordinates(client) {
     })}`,
     countryBeingAttack: chance.country({ full: true }),
     typeofAttack: chance.pickone(['Air', 'Land', 'Sea']),
-    damage: `${chance.integer({ min: 10, max: 25 })}%`,
+    damage: `${chance.integer({ min: 1000, max: 2500 })}`,
+    health: 10000,
     // company: 'acme-widgets',
   };
 
@@ -16,7 +17,10 @@ function sendCoordinates(client) {
     event: 'gameStart',
     messageId: event.orderId,
     clientId: event.country,
+    countryId: event.countryBeingAttack,
     order: event,
+    damage: event.damage,
+    health: event.health,
   };
   console.log('Waiting on enemy response', event);
   client.emit(EventNames.gameStart, payload);
