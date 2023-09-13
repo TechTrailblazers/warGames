@@ -14,12 +14,42 @@ function handleGameStart(payload, client) {
   );
 }
 
-function startDriver(client) {
+// function startDriver(client) {
+//   console.log('User has Started Game');
+//   client.emit(EventNames.ready);
+//   client.on(EventNames.gameStart, (payload) =>
+//     handleGameStart(payload, client)
+//   );
+// }
+
+async function startDriver(client) {
   console.log('User has Started Game');
   client.emit(EventNames.ready);
-  client.on(EventNames.gameStart, (payload) =>
-    handleGameStart(payload, client)
-  );
+
+  try {
+    const inquirer = await import('inquirer');
+
+    const answer = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'startGame',
+        message: 'Do you want to start the game?',
+        choices: ['yes', 'no'],
+      },
+    ]);
+
+    if (answer.startGame === 'yes') {
+      console.log('Starting the game...');
+      client.on(EventNames.gameStart, (payload) =>
+        handleGameStart(payload, client)
+      );
+    } else {
+      console.log('Game not started.');
+    }
+  } catch (error) {
+    console.error('An error occurred while prompting the user:', error);
+  }
+  startDriver(client);
 }
 
 module.exports = { startDriver, toTest: { deliver, handleGameStart } };
