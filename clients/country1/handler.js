@@ -13,13 +13,13 @@ function sendCoordinates(client) {
   };
 
   const payload = {
-    event: 'enemyResponse',
+    event: 'gameStart',
     messageId: event.orderId,
     clientId: chance.country({ full: true }),
     order: event,
   };
   console.log('Waiting on enemy response', event);
-  client.emit(EventNames.enemyResponse, payload);
+  client.emit(EventNames.gameStart, payload);
 }
 
 function acknowledgedAttack(payload, client) {
@@ -30,7 +30,7 @@ function acknowledgedAttack(payload, client) {
 function attackStarting(client) {
   console.log('Commencing attack!');
   client.emit('getAll', chance.country({ full: true }));
-  client.on(EventNames.deliveredAttack, (payload) =>
+  client.on(EventNames.delivered, (payload) =>
     acknowledgedAttack(payload, client)
   );
 
