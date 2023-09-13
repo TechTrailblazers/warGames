@@ -5,71 +5,69 @@ const io = new Server();
 
 io.listen(3000);
 
-const driverQueue = new Queue();
-const packageQueue = new Queue();
+// const userQueue = new Queue();
+// const attackQueue = new Queue();
+const userQueue = new Queue();
+const attackQueue = new Queue();
 
-let flowerSocket = null;
-let acmeSocket = null;
+let country1Socket = null;
+let country2Socket = null;
 
-const flowersDeliveryQueue = new Queue();
-const acmeDeliveryQueue = new Queue();
+const country1AttackQueue = new Queue();
+const country2AttackQueue = new Queue();
 
-function handleAttack(payload) {
-  if (payload && payload.messageId) {
-    console.log('The attack is pending to hit', payload.orderId);
-    if (driverQueue.isEmpty()) {
-      packageQueue.enqueue(payload);
-    } else {
-      const driverSocket = driverQueue.dequeue();
-      driverSocket.emit(EventNames.pickup, payload);
-    }
+function handleGameStart(payload) {
+  console.log('The user has requested to start the game');
+  if (userQueue.isEmpty()) {
+    attackQueue.enqueue(payload);
   } else {
-    console.log('Invalid payload for attack:', payload);
+    const userSocket = userQueue.dequeue();
+    userSocket.emit(EventNames.gameStart, payload);
   }
 }
 
-function handleDelivered(payload) {
-  console.log(`the package for ${payload.customerId} has been delivered`);
-  if (payload.clientId === chance.country({ full: true })) {
-    flowersDeliveryQueue.enqueue(payload);
-    flowerSocket.emit(EventNames.deliveredAttack, payload);
+function handleDeliveredAttack(payload) {
+  console.log(`the attack for ${payload.customerId} has been confirmed`);
+  if (payload.clientId === '1-800-flowers') {
+    country1AttackQueue.enqueue(payload);
+    country1Socket.emit(EventNames.delivered, payload);
   }
-  if (payload.clientId === chance.country({ full: true })) {
-    acmeDeliveryQueue.enqueue(payload);
-    acmeSocket.emit(EventNames.deliveredAttack, payload);
+  if (payload.clientId === 'acme-widgets') {
+    country2AttackQueue.enqueue(payload);
+    country2Socket.emit(EventNames.delivered, payload);
   }
 }
 
-function handleDriverReady(socket) {
-  console.log('driver #', socket.id, 'is ready');
-  if (packageQueue.isEmpty()) {
-    driverQueue.enqueue(socket);
+function handleUserReady(socket) {
+  console.log('User is ready to start');
+  if (attackQueue.isEmpty()) {
+    userQueue.enqueue(socket);
   } else {
-    const parcel = packageQueue.dequeue();
-    socket.emit(EventNames.pickup, parcel);
+    const attack = attackQueue.dequeue();
+    socket.emit(EventNames.gameStart, attack);
   }
 }
 
 function handleReceived(payload) {
-  console.log('vendor acknowledged delivery', payload.messageId);
-  if (payload.clientId === chance.country({ full: true })) {
-    flowersDeliveryQueue.dequeue();
+  console.log('Country knows about the attack', payload.messageId);
+  if (payload.clientId === '1-800-flowers') {
+    country1AttackQueue.dequeue();
   }
-  if (payload.clientId === chance.country({ full: true })) {
-    acmeDeliveryQueue.dequeue();
+  if (payload.clientId === 'acme-widgets') {
+    country2AttackQueue.dequeue();
   }
 }
 
 function handleGetAll(storeName, socket) {
-  if (storeName === payload.clientId) {
-    flowerSocket = socket;
-    flowersDeliveryQueue.queue.forEach((order) => {
-      socket.emit(EventNames.deliveredAttack, order);
+  if (storeName === '1-800-flowers') {
+    country1Socket = socket;
+    country1AttackQueue.queue.forEach((order) => {
+      socket.emit(EventNames.delivered, order);
     });
-  } else if (storeName === chance.country({ full: true })) {
-    acmeSocket = socket;
-    acmeDeliveryQueue.queue.forEach((order) => {
-      socket.emit(EventNames.deliveredAttack, order);
+  } else if (storeName === 'acme-widgets') {
+    country2Socket = socket;
+    country2AttackQueue.queue.forEach((order) => {
+      socket.emit(EventNames.delivered, order);
     });
   }
 }
@@ -77,9 +75,9 @@ function handleGetAll(storeName, socket) {
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  socket.on(EventNames.enemyResponse, handleAttack);
-  socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
-  socket.on(EventNames.deliveredAttack, handleDelivered);
+  socket.on(EventNames.gameStart, handleGameStart);
+  socket.on(EventNames.ready, (payload) => handleUserReady(socket));
+  socket.on(EventNames.delivered, handleDeliveredAttack);
   socket.on('received', handleReceived);
   socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }
@@ -92,7 +90,7 @@ function startServer() {
 module.exports = {
   startServer,
   io,
-  handleAttack,
-  handleDelivered,
+  handleGameStart,
+  handleDeliveredAttack,
   handleConnection,
 };

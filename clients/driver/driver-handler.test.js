@@ -1,6 +1,6 @@
 const { EventNames } = require('../../utilities');
 const {
-  toTest: { deliver, handleAttack },
+  toTest: { deliver, handleGameStart },
 } = require('./handler.js');
 
 // this test does not match the demo code, it is from my caps project, but you can use it as a reference
@@ -18,12 +18,12 @@ describe('Tests the driver handler functions', () => {
     expect(io.emit).toHaveBeenCalledWith(EventNames.delivered, '1234');
   });
 
-  test('Driver handleAttack', () => {
+  test('Driver handleGameStart', () => {
     // Arrange
     const io = { emit: jest.fn() };
 
     // Act
-    handleAttack(
+    handleGameStart(
       {
         store: 'test',
         orderId: '1234',
