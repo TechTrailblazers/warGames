@@ -15,7 +15,7 @@ function sendCoordinates(client) {
   const payload = {
     event: 'gameStart',
     messageId: event.orderId,
-    clientId: chance.country({ full: true }),
+    clientId: event.country,
     order: event,
   };
   console.log('Waiting on enemy response', event);

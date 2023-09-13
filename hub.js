@@ -33,16 +33,17 @@ function handleGameStart(payload) {
   }
 }
 
-function handleDeliveredAttack(payload) {
-  console.log(`the attack for ${payload.customerId} has been confirmed`);
-  if (payload.clientId === '1-800-flowers') {
+function handleDeliveredAttack(payload, socket) {
+  console.log(`the attack for ${payload.clientId} has been confirmed`);
+  {
     country1AttackQueue.enqueue(payload);
-    country1Socket.emit(EventNames.delivered, payload);
+    socket.emit(EventNames.delivered, payload);
   }
-  if (payload.clientId === 'acme-widgets') {
-    country2AttackQueue.enqueue(payload);
-    country2Socket.emit(EventNames.delivered, payload);
-  }
+  // if (payload.clientId === '1-800-flowers') {
+  // if (payload.clientId === 'acme-widgets') {
+  //   country2AttackQueue.enqueue(payload);
+  //   country2Socket.emit(EventNames.delivered, payload);
+  // }
 }
 
 function handleUserReady(socket) {
@@ -87,7 +88,9 @@ function handleConnection(socket) {
 
   socket.on(EventNames.gameStart, handleGameStart);
   socket.on(EventNames.ready, (payload) => handleUserReady(socket));
-  socket.on(EventNames.delivered, handleDeliveredAttack);
+  socket.on(EventNames.delivered, (payload) =>
+    handleDeliveredAttack(payload, socket)
+  );
   socket.on('received', handleReceived);
   socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }
