@@ -1,6 +1,6 @@
 const { io } = require('socket.io-client');
 const client = io('ws://localhost:3000');
-const { vendorStart } = require('./handler');
+const { attackStarting } = require('./handler');
 
 module.exports = { client };
-vendorStart(client);
+attackStarting(client);

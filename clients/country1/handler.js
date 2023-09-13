@@ -1,41 +1,47 @@
 const { chance, EventNames } = require('../../utilities');
 
-function sendPickup(client) {
+function sendCoordinates(client) {
   const event = {
-    store: chance.city(),
-    orderId: chance.guid(),
-    customer: chance.name(),
-    address: chance.address(),
-    company: 'acme-widgets',
+    country: chance.country({ full: true }),
+    coordinates: ` Attacking on coordinates: ${chance.coordinates({
+      fixed: 2,
+    })}`,
+    countryBeingAttack: chance.country({ full: true }),
+    typeofAttack: chance.pickone(['Air', 'Land', 'Sea']),
+    damage: `${chance.integer({ min: 10, max: 25 })}%`,
+    // company: 'acme-widgets',
   };
 
   const payload = {
-    event: 'pickup',
+    event: 'enemyResponse',
     messageId: event.orderId,
-    clientId: `acme-widgets`,
+    clientId: chance.country({ full: true }),
     order: event,
   };
-  console.log('Vender asking for pickup!', event);
-  client.emit(EventNames.gameStart, payload);
+  console.log('Waiting on enemy response', event);
+  client.emit(EventNames.enemyResponse, payload);
 }
 
-function acknowledgedDelivery(payload, client) {
-  console.log('Thank you for the delivery!', payload.messageId);
+function acknowledgedAttack(payload, client) {
+  console.log('Target Hit', payload.messageId);
   client.emit('received', payload);
 }
 
-function vendorStart(client) {
-  console.log('vendor has started');
-  client.emit('getAll', 'acme-widgets');
-  client.on(EventNames.delivered, (payload) =>
-    acknowledgedDelivery(payload, client)
+function attackStarting(client) {
+  console.log('Commencing attack!');
+  client.emit('getAll', chance.country({ full: true }));
+  client.on(EventNames.deliveredAttack, (payload) =>
+    acknowledgedAttack(payload, client)
   );
 
   function ready() {
-    sendPickup(client);
+    sendCoordinates(client);
     setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
   }
   ready();
 }
 
-module.exports = { vendorStart, toTest: { sendPickup, acknowledgedDelivery } };
+module.exports = {
+  attackStarting,
+  toTest: { sendCoordinates, acknowledgedAttack },
+};
