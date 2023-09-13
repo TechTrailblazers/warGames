@@ -5,66 +5,68 @@ const io = new Server();
 
 io.listen(3000);
 
-const driverQueue = new Queue();
-const packageQueue = new Queue();
+// const userQueue = new Queue();
+// const attackQueue = new Queue();
+const userQueue = new Queue();
+const attackQueue = new Queue();
 
-let flowerSocket = null;
-let acmeSocket = null;
+let country1Socket = null;
+let country2Socket = null;
 
-const flowersDeliveryQueue = new Queue();
-const acmeDeliveryQueue = new Queue();
+const country1AttackQueue = new Queue();
+const country2AttackQueue = new Queue();
 
-function handlePickUp(payload) {
-  console.log('the pickup was requested for delivery', payload.messageId);
-  if (driverQueue.isEmpty()) {
-    packageQueue.enqueue(payload);
+function handleGameStart(payload) {
+  console.log('The user has requested to start the game');
+  if (userQueue.isEmpty()) {
+    attackQueue.enqueue(payload);
   } else {
-    const driverSocket = driverQueue.dequeue();
-    driverSocket.emit(EventNames.pickup, payload);
+    const userSocket = userQueue.dequeue();
+    userSocket.emit(EventNames.gameStart, payload);
   }
 }
 
-function handleDelivered(payload) {
-  console.log(`the package for ${payload.customerId} has been delivered`);
+function handleDeliveredAttack(payload) {
+  console.log(`the attack for ${payload.customerId} has been confirmed`);
   if (payload.clientId === '1-800-flowers') {
-    flowersDeliveryQueue.enqueue(payload);
-    flowerSocket.emit(EventNames.delivered, payload);
+    country1AttackQueue.enqueue(payload);
+    country1Socket.emit(EventNames.delivered, payload);
   }
   if (payload.clientId === 'acme-widgets') {
-    acmeDeliveryQueue.enqueue(payload);
-    acmeSocket.emit(EventNames.delivered, payload);
+    country2AttackQueue.enqueue(payload);
+    country2Socket.emit(EventNames.delivered, payload);
   }
 }
 
-function handleDriverReady(socket) {
-  console.log('driver #', socket.id, 'is ready');
-  if (packageQueue.isEmpty()) {
-    driverQueue.enqueue(socket);
+function handleUserReady(socket) {
+  console.log('User is ready to start');
+  if (attackQueue.isEmpty()) {
+    userQueue.enqueue(socket);
   } else {
-    const parcel = packageQueue.dequeue();
-    socket.emit(EventNames.pickup, parcel);
+    const attack = attackQueue.dequeue();
+    socket.emit(EventNames.gameStart, attack);
   }
 }
 
 function handleReceived(payload) {
-  console.log('vendor acknowledged delivery', payload.messageId);
+  console.log('Country knows about the attack', payload.messageId);
   if (payload.clientId === '1-800-flowers') {
-    flowersDeliveryQueue.dequeue();
+    country1AttackQueue.dequeue();
   }
   if (payload.clientId === 'acme-widgets') {
-    acmeDeliveryQueue.dequeue();
+    country2AttackQueue.dequeue();
   }
 }
 
 function handleGetAll(storeName, socket) {
   if (storeName === '1-800-flowers') {
-    flowerSocket = socket;
-    flowersDeliveryQueue.queue.forEach((order) => {
+    country1Socket = socket;
+    country1AttackQueue.queue.forEach((order) => {
       socket.emit(EventNames.delivered, order);
     });
   } else if (storeName === 'acme-widgets') {
-    acmeSocket = socket;
-    acmeDeliveryQueue.queue.forEach((order) => {
+    country2Socket = socket;
+    country2AttackQueue.queue.forEach((order) => {
       socket.emit(EventNames.delivered, order);
     });
   }
@@ -73,9 +75,9 @@ function handleGetAll(storeName, socket) {
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  socket.on(EventNames.pickup, handlePickUp);
-  socket.on(EventNames.ready, (payload) => handleDriverReady(socket));
-  socket.on(EventNames.delivered, handleDelivered);
+  socket.on(EventNames.gameStart, handleGameStart);
+  socket.on(EventNames.ready, (payload) => handleUserReady(socket));
+  socket.on(EventNames.delivered, handleDeliveredAttack);
   socket.on('received', handleReceived);
   socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
 }
@@ -88,7 +90,7 @@ function startServer() {
 module.exports = {
   startServer,
   io,
-  handlePickUp,
-  handleDelivered,
+  handleGameStart,
+  handleDeliveredAttack,
   handleConnection,
 };
