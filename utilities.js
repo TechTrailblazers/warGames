@@ -1,7 +1,6 @@
 const chance = require('chance')();
 
 const EventNames = {
-  // pickup: 'pickUp',
   question1: '',
   question2: '',
   question3: '',
@@ -11,10 +10,6 @@ const EventNames = {
   enemyResponse: 'enemyResponse',
   userReady: 'userReady',
   deliveredAttack: 'deliveredAttack',
-
-  // pickedUp: 'driverPickedUp',
-  // inTransit: 'inTransit',
-  // announcement: 'announcement',
 };
 
 class Queue {

@@ -14,7 +14,7 @@ function sendCoordinates(client) {
 
   const payload = {
     event: 'enemyResponse',
-    messageId: event.orderId,
+    messageId: event.country,
     clientId: chance.country({ full: true }),
     order: event,
   };
