@@ -79,8 +79,8 @@ The GameScore table (optional) can be used to store final scores achieved by use
 
 - There will be three different attack options, each will have a higher hit score but the higher the hit score the less probable of successful attack.
 
-- There will be a fourth option of defense where they will skip a turn but negate any damage that may come there way.
+<!-- - There will be a fourth option of defense where they will skip a turn but negate any damage that may come there way. -->
 
-- A completion of game will occur when users country has been destroyed or user has successfully destroyed x amount of countries.
+- A completion of game will occur when users country has been destroyed or user has successfully destroyed attacking country.
 
-- once game is complete the results will be stored on user profile (stretch will be a board where highest scores are displayed)
+<!-- - once game is complete the results will be stored on user profile (stretch will be a board where highest scores are displayed) -->
