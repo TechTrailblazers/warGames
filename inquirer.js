@@ -99,6 +99,7 @@ async function main() {
       }, 4000);
     } else {
       console.log('Goodbye!');
+      console.log('Closing the game...');
     }
   } catch (error) {
     console.error('An error occurred:', error);
