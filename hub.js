@@ -1,25 +1,69 @@
 const { Server } = require('socket.io');
-const { EventNames, Queue } = require('./utilities.js');
+const { chance, EventNames, Queue } = require('./utilities.js');
 
 const io = new Server();
 
 io.listen(3000);
 
-// const userQueue = new Queue();
-// const attackQueue = new Queue();
 const userQueue = new Queue();
 const attackQueue = new Queue();
 
-let country1Socket = null;
-let country2Socket = null;
-
 const country1AttackQueue = new Queue();
-const country2AttackQueue = new Queue();
 
 let consoleLogShown = false;
 let userConsoleLog = false;
 
-function handleGameStart(payload) {
+function sendCoordinates(client) {
+  const event = {
+    country: chance.country({ full: true }),
+    coordinates: ` Attacking on coordinates: ${chance.coordinates({
+      fixed: 2,
+    })}`,
+    countryBeingAttack: chance.country({ full: true }),
+    typeofAttack: chance.pickone(['Air', 'Land', 'Sea']),
+    damage: `${chance.integer({ min: 1000, max: 2500 })}`,
+    health: 10000,
+  };
+
+  const payload = {
+    event: 'gameStart',
+    messageId: event.orderId,
+    clientId: event.country,
+    countryId: event.countryBeingAttack,
+    order: event,
+    damage: event.damage,
+    health: event.health,
+  };
+  console.log('Waiting on enemy response', event);
+  client.emit(EventNames.gameStart, payload);
+}
+
+function acknowledgedAttack(payload, client) {
+  console.log('Target Hit', payload.countryId);
+  client.emit('received', payload);
+}
+function failedAttack(payload, client) {
+  console.log('Target Missed', payload.countryId);
+  client.emit('received', payload);
+}
+
+function attackStarting(client) {
+  console.log('Commencing attack!');
+  client.on(EventNames.delivered, (payload) =>
+    acknowledgedAttack(payload, client)
+  );
+  client.on(EventNames.attackFailed, (payload) =>
+    failedAttack(payload, client)
+  );
+
+  function ready() {
+    sendCoordinates(client);
+    setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
+  }
+  ready();
+}
+
+function handleGameStart(payload, client) {
   if (!consoleLogShown) {
     console.log('The user has requested to start the game');
     consoleLogShown = true;
@@ -39,11 +83,6 @@ function handleDeliveredAttack(payload, socket) {
     country1AttackQueue.enqueue(payload);
     socket.emit(EventNames.delivered, payload);
   }
-  // if (payload.clientId === '1-800-flowers') {
-  // if (payload.clientId === 'acme-widgets') {
-  //   country2AttackQueue.enqueue(payload);
-  //   country2Socket.emit(EventNames.delivered, payload);
-  // }
 }
 
 function handleUserReady(socket) {
@@ -59,27 +98,10 @@ function handleUserReady(socket) {
   }
 }
 
-function handleReceived(payload) {
-  console.log('Country knows about the attack', payload.messageId);
-  if (payload.clientId === '1-800-flowers') {
-    country1AttackQueue.dequeue();
-  }
-  if (payload.clientId === 'acme-widgets') {
-    country2AttackQueue.dequeue();
-  }
-}
-
-function handleGetAll(storeName, socket) {
-  if (storeName === '1-800-flowers') {
-    country1Socket = socket;
-    country1AttackQueue.queue.forEach((order) => {
-      socket.emit(EventNames.delivered, order);
-    });
-  } else if (storeName === 'acme-widgets') {
-    country2Socket = socket;
-    country2AttackQueue.queue.forEach((order) => {
-      socket.emit(EventNames.delivered, order);
-    });
+function handleReceived(payload, socket) {
+  console.log('Country knows about the attack');
+  {
+    country1AttackQueue.dequeue(payload);
   }
 }
 
@@ -91,8 +113,9 @@ function handleConnection(socket) {
   socket.on(EventNames.delivered, (payload) =>
     handleDeliveredAttack(payload, socket)
   );
-  socket.on('received', handleReceived);
-  socket.on('getAll', (storeName) => handleGetAll(storeName, socket));
+  socket.on(EventNames.received, (payload) => handleReceived(socket));
+
+  attackStarting(socket);
 }
 
 function startServer() {
