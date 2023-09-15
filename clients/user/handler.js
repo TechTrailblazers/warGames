@@ -24,10 +24,9 @@ function deliver(payload, client) {
     client.emit(EventNames.ready);
   } else {
     // Attack is unsuccessful
-    console.log('Users attack has missed', payload.countryId);
-    // You can choose to handle the unsuccessful case here, such as emitting an event for a failed attack.
-    // client.emit(EventNames.attackFailed, payload);
-    client.emit(EventNames.delivered, payload);
+    console.log("User's attack has missed", payload.countryId);
+    client.emit(EventNames.attackFailed, payload);
+    // client.emit(EventNames.delivered, payload);
     client.emit(EventNames.ready);
   }
 }
@@ -83,4 +82,7 @@ async function startDriver(client) {
   startDriver(client);
 }
 
-module.exports = { startDriver, toTest: { deliver, handleGameStart } };
+module.exports = {
+  startDriver,
+  toTest: { deliver, handleGameStart },
+};
