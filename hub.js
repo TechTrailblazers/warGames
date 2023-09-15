@@ -58,7 +58,7 @@ function attackStarting(client) {
 
   function ready() {
     sendCoordinates(client);
-    setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
+    // setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
   }
   ready();
 }

@@ -1,5 +1,5 @@
 const { startServer } = require('./hub.js');
-const { startDriver } = require('./clients/user/handler.js');
+const { startUser } = require('./clients/user/handler.js');
 const { io } = require('socket.io-client');
 
 const client = io('ws://localhost:3000');
@@ -25,4 +25,4 @@ function login() {
 login();
 
 startServer();
-startDriver(client);
+// startUser(client);

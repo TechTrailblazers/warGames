@@ -44,7 +44,7 @@ function handleGameStart(payload, client) {
   );
 }
 
-function startDriver(client) {
+function startUser(client) {
   console.log('User has Started Game');
   client.emit(EventNames.ready);
   client.on(EventNames.gameStart, (payload) =>
@@ -52,7 +52,7 @@ function startDriver(client) {
   );
 }
 
-// async function startDriver(client) {
+// async function startUser(client) {
 //   console.log('User has Started Game');
 //   client.emit(EventNames.ready);
 
@@ -79,10 +79,9 @@ function startDriver(client) {
 //   } catch (error) {
 //     console.error('An error occurred while prompting the user:', error);
 //   }
-//   startDriver(client);
+//   startUser(client);
 // }
 
 module.exports = {
-  startDriver,
-  toTest: { deliver, handleGameStart },
+  startUser,
 };
