@@ -1,6 +1,6 @@
-import { Server } from 'socket.io';
+const { Server } = require('socket.io');
 
-export const startSocketServer = () => {
+startSocketServer = () => {
   const io = new Server();
 
   io.on('connection', (socket) => {
@@ -18,4 +18,11 @@ export const startSocketServer = () => {
   io.on('connection', handleConnection);
 
   console.log('Socket.io server is running on port 3000');
+};
+
+// Your code here
+
+module.exports = {
+  startSocketServer,
+  // Other exports if any
 };

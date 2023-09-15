@@ -1,5 +1,6 @@
-import inquirer from 'inquirer';
-import { startSocketServer } from './serverInquirer.js';
+const inquirer = require('inquirer');
+
+const { startSocketServer } = require('./serverInquirer.js');
 
 function login() {
   return inquirer.prompt([
