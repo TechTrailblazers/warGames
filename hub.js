@@ -1,17 +1,31 @@
 const { Server } = require('socket.io');
 const { chance, EventNames, Queue } = require('./utilities.js');
+const { v4: uuidv4 } = require('uuid');
 
 const io = new Server();
 
 io.listen(3000);
 
-const userQueue = new Queue();
-const attackQueue = new Queue();
-
-const country1AttackQueue = new Queue();
+const connectedUsers = new Map();
 
 let consoleLogShown = false;
 let userConsoleLog = false;
+let connectedUsersCount = 0;
+
+function handleChatMessage(message, socket) {
+  try {
+    // Parse the received message back into an object
+
+    // Emit the parsed message to all clients
+    io.emit('chatMessage', {
+      sender: socket.id,
+      message: message, // Extract the message property
+    });
+    console.log(message);
+  } catch (error) {
+    console.error('Error parsing chat message:', error);
+  }
+}
 
 function handleGameStart(payload, client) {
   if (!consoleLogShown) {
@@ -19,11 +33,8 @@ function handleGameStart(payload, client) {
     consoleLogShown = true;
   }
 
-  if (userQueue.isEmpty()) {
-    attackQueue.enqueue(payload);
-  } else {
-    const userSocket = userQueue.dequeue();
-    userSocket.emit(EventNames.gameStart, payload);
+  if (connectedUsersCount === 2) {
+    startGame();
   }
 }
 
@@ -40,32 +51,64 @@ function handleUserReady(socket) {
     console.log('User is ready to start');
     userConsoleLog = true;
   }
-  if (attackQueue.isEmpty()) {
-    userQueue.enqueue(socket);
-  } else {
-    const attack = attackQueue.dequeue();
-    socket.emit(EventNames.gameStart, attack);
+  connectedUsersCount++;
+
+  if (connectedUsersCount === 2) {
+    startGame();
   }
 }
 
 function handleKnown(payload, socket) {
   console.log(payload.countryId, 'knows about the attack');
-  {
-    country1AttackQueue.dequeue(payload);
-  }
 }
 
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
+  connectedUsers.set(socket.id, socket);
+
+  socket.on('chatMessage', (message) => {
+    handleChatMessage(message, socket);
+  });
 
   socket.on(EventNames.gameStart, handleGameStart);
-  socket.on(EventNames.ready, (payload) => handleUserReady(socket));
-  socket.on(EventNames.delivered, (payload) =>
-    handleConfirmedAttack(payload, socket)
-  );
+
+  socket.on(EventNames.ready, () => {
+    handleUserReady(socket);
+  });
+
   socket.on(EventNames.received, (payload) => handleKnown(payload, socket));
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected: ', socket.id);
+    connectedUsersCount--;
+    connectedUsers.delete(socket.id);
+  });
 }
 
+function startGame() {
+  console.log('Both users are connected and ready. Starting the game...');
+  const userSockets = Array.from(connectedUsers.values());
+  const player1Id = uuidv4(); // Generate a unique ID for Player 1
+  const player2Id = uuidv4();
+
+  // Customize the payload for each player
+  const payloadPlayer1 = {
+    playerId: player1Id,
+    playerName: 'Player 1',
+    // Other player-specific data
+  };
+
+  const payloadPlayer2 = {
+    playerId: player2Id,
+    playerName: 'Player 2',
+    // Other player-specific data
+  };
+
+  userSockets.forEach((socket, index) => {
+    const payload = index === 0 ? payloadPlayer1 : payloadPlayer2;
+    socket.emit(EventNames.gameStart, payload);
+  });
+}
 function startServer() {
   io.on('connection', handleConnection);
   console.log('The server has been started');

@@ -1,5 +1,7 @@
-const { attackStarting, startPlayer1 } = require('./handler.js');
+const { attackStarting, startPlayer2 } = require('./handler.js');
 const { io } = require('socket.io-client');
+const socket = io('http://localhost:3000');
+
 // User Code
 const readline = require('readline');
 
@@ -7,8 +9,6 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-
-const socket = io('http://localhost:3000');
 
 socket.on('connect', () => {
   console.log('Connected to the server');
@@ -25,7 +25,7 @@ socket.on('connect', () => {
     // Listen for user input and send chat messages to the server
     rl.on('line', (input) => {
       // Stringify the input as a JSON object before sending
-      socket.emit('chatMessage', JSON.stringify(input));
+      socket.emit('chatMessage', JSON.stringify({ message: input }));
     });
   });
 });
@@ -35,7 +35,5 @@ socket.on('disconnect', () => {
 });
 
 // Call your game-related functions here as needed
-startPlayer1(socket);
-
-// attackStarting(client);
-
+startPlayer2(socket);
+// attackStarting(socket);
