@@ -1,6 +1,65 @@
 const { chance, EventNames } = require('../../utilities');
 
-function deliver(payload, client) {
+function sendCoordinates(client) {
+  const event = {
+    country: chance.country({ full: true }),
+    coordinates: ` Attacking on coordinates: ${chance.coordinates({
+      fixed: 2,
+    })}`,
+    countryBeingAttack: chance.country({ full: true }),
+    typeofAttack: chance.pickone(['Air', 'Land', 'Sea']),
+    damage: `${chance.integer({ min: 1000, max: 2500 })}`,
+    health: 10000,
+  };
+
+  const payload = {
+    event: 'gameStart',
+    attackSent: event.damage,
+    messageId: event.orderId,
+    clientId: event.country,
+    countryId: event.countryBeingAttack,
+    order: event,
+    damage: event.damage,
+    health: event.health,
+  };
+  console.log(
+    'User has sent attack!',
+    payload.clientId,
+    'is attacking',
+    payload.countryId
+  );
+
+  client.emit(EventNames.gameStart, payload);
+  client.emit('received', payload);
+}
+
+function attackStarting(client) {
+  console.log('Commencing attack!');
+  client.on(EventNames.delivered, (payload) =>
+    acknowledgedAttack(payload, client)
+  );
+  client.on(EventNames.attackFailed, (payload) =>
+    failedAttack(payload, client)
+  );
+
+  function ready() {
+    sendCoordinates(client);
+    setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
+  }
+  ready();
+}
+function acknowledgedAttack(payload, client) {
+  console.log('Target Hit', payload.countryId);
+  client.emit('received', payload);
+  // client.emit(EventNames.delivered, payload);
+}
+function failedAttack(payload, client) {
+  console.log('Target Missed', payload.countryId);
+  client.emit('received', payload);
+  // client.emit(EventNames.delivered, payload);
+}
+
+function attackChance(payload, client) {
   // Define the success chance threshold (e.g., 0.7 for a 70% success chance)
   const successChance = 0.6;
 
@@ -31,58 +90,23 @@ function deliver(payload, client) {
   }
 }
 
-function handleGameStart(payload, client) {
-  console.log(
-    'User has sent attack!',
-    payload.clientId,
-    'is attacking',
-    payload.countryId
-  );
+function handleSentAttack(payload, client) {
+  console.log('Waiting on enemy response');
   setTimeout(
-    () => deliver(payload, client),
+    () => attackChance(payload, client),
     chance.integer({ min: 5000, max: 10000 })
   );
 }
 
-function startDriver(client) {
+function startUser(client) {
   console.log('User has Started Game');
   client.emit(EventNames.ready);
   client.on(EventNames.gameStart, (payload) =>
-    handleGameStart(payload, client)
+    handleSentAttack(payload, client)
   );
 }
 
-// async function startDriver(client) {
-//   console.log('User has Started Game');
-//   client.emit(EventNames.ready);
-
-//   try {
-//     const inquirer = await import('inquirer');
-
-//     const answer = await inquirer.prompt([
-//       {
-//         type: 'list',
-//         name: 'startGame',
-//         message: 'Do you want to start the game?',
-//         choices: ['yes', 'no'],
-//       },
-//     ]);
-
-//     if (answer.startGame === 'yes') {
-//       console.log('Starting the game...');
-//       client.on(EventNames.gameStart, (payload) =>
-//         handleGameStart(payload, client)
-//       );
-//     } else {
-//       console.log('Game not started.');
-//     }
-//   } catch (error) {
-//     console.error('An error occurred while prompting the user:', error);
-//   }
-//   startDriver(client);
-// }
-
 module.exports = {
-  startDriver,
-  toTest: { deliver, handleGameStart },
+  attackStarting,
+  startUser,
 };

@@ -1,6 +1,6 @@
 // const { chance, EventNames } = require('../../utilities');
 
-// function sendCoordinates(client) {
+// function dinates(client) {
 //   const event = {
 //     country: chance.country({ full: true }),
 //     coordinates: ` Attacking on coordinates: ${chance.coordinates({
@@ -38,7 +38,7 @@
 //   );
 
 //   function ready() {
-//     sendCoordinates(client);
+//     dinates(client);
 //     setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
 //   }
 //   ready();
@@ -46,5 +46,5 @@
 
 // module.exports = {
 //   attackStarting,
-//   toTest: { sendCoordinates, acknowledgedAttack },
+//   toTest: { dinates, acknowledgedAttack },
 // };
