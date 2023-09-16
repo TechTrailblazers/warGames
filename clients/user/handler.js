@@ -1,4 +1,5 @@
 const { chance, EventNames } = require('../../utilities');
+
 let numberOfPlayers = 1;
 let isWaitingForUserInput = true;
 
@@ -6,6 +7,109 @@ function setNumberOfPlayers(players) {
   numberOfPlayers = players;
   console.log(`Number of players set to: ${numberOfPlayers}`);
 }
+
+const inquirer = require('inquirer');
+const { io } = require('socket.io-client');
+
+const client = io('ws://localhost:3000');
+
+
+function login() {
+  console.log(`
+
+    ░██╗░░░░░░░██╗███████╗██╗░░░░░░█████╗░░█████╗░███╗░░░███╗███████╗  ████████╗░█████╗░  ░██╗░░░░░░░██╗░█████╗░██████╗░
+    ░██║░░██╗░░██║██╔════╝██║░░░░░██╔══██╗██╔══██╗████╗░████║██╔════╝  ╚══██╔══╝██╔══██╗  ░██║░░██╗░░██║██╔══██╗██╔══██╗
+    ░╚██╗████╗██╔╝█████╗░░██║░░░░░██║░░╚═╝██║░░██║██╔████╔██║█████╗░░  ░░░██║░░░██║░░██║  ░╚██╗████╗██╔╝███████║██████╔╝
+    ░░████╔═████║░██╔══╝░░██║░░░░░██║░░██╗██║░░██║██║╚██╔╝██║██╔══╝░░  ░░░██║░░░██║░░██║  ░░████╔═████║░██╔══██║██╔══██╗
+    ░░╚██╔╝░╚██╔╝░███████╗███████╗╚█████╔╝╚█████╔╝██║░╚═╝░██║███████╗  ░░░██║░░░╚█████╔╝  ░░╚██╔╝░╚██╔╝░██║░░██║██║░░██║
+    ░░░╚═╝░░░╚═╝░░╚══════╝╚══════╝░╚════╝░░╚════╝░╚═╝░░░░░╚═╝╚══════╝  ░░░╚═╝░░░░╚════╝░  ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝
+
+    ░██████╗░░█████╗░███╗░░░███╗███████╗░██████╗
+    ██╔════╝░██╔══██╗████╗░████║██╔════╝██╔════╝
+    ██║░░██╗░███████║██╔████╔██║█████╗░░╚█████╗░
+    ██║░░╚██╗██╔══██║██║╚██╔╝██║██╔══╝░░░╚═══██╗
+    ╚██████╔╝██║░░██║██║░╚═╝░██║███████╗██████╔╝
+    ░╚═════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚═════╝░
+
+        `);
+
+  inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'choices',
+        message: 'Do you want to start the game?',
+        choices: ['Yes', 'No'],
+      },
+    ])
+    .then((answers) => {
+      if (answers.choices === 'Yes') {
+        inquirer
+          .prompt([
+            {
+              type: 'input',
+              name: 'username',
+              message: 'Enter your username:',
+            },
+            {
+              type: 'password',
+              name: 'password',
+              message: 'Enter your password:',
+              mask: '*',
+            },
+          ])
+          .then((answers) => {
+            startUser(client);
+            inquirer
+              .prompt([
+                {
+                  type: 'list',
+                  name: 'choices',
+                  message: 'Do you want to attack?',
+                  choices: ['Yes', 'No'],
+                },
+              ])
+              .then((answers) => {
+                if (answers.choices === 'Yes') {
+                  inquirer
+                    .prompt([
+                      {
+                        type: 'list',
+                        name: 'coordinates',
+                        message: 'Select your attacking ',
+                        choices: [
+                          `${chance.coordinates({
+                            fixed: 2,
+                          })}`,
+                          `${chance.coordinates({
+                            fixed: 2,
+                          })}`,
+                          `${chance.coordinates({
+                            fixed: 2,
+                          })}`,
+                        ],
+                      },
+                    ])
+                    .then((answers) => {
+                      console.log(
+                        'Attacking on coordinates: ' + answers.coordinates
+                      );
+
+                      attackStarting(client);
+                    });
+                } else {
+                  console.log('Goodbye');
+                }
+              });
+          });
+      } else {
+        console.log('Goodbye');
+      }
+    });
+}
+
+login();
+
 
 function sendCoordinates(client) {
   if (isWaitingForUserInput) {
@@ -95,8 +199,50 @@ function attackStarting(client) {
     failedAttack(payload, client)
   );
 
+
   // Start the game by sending coordinates
   sendCoordinates(client);
+
+
+// function attackStarting(client) {
+//   console.log('Commencing attack!');
+//   client.on(EventNames.delivered, (payload) =>
+//     acknowledgedAttack(payload, client)
+//   );
+//   client.on(EventNames.attackFailed, (payload) =>
+//     failedAttack(payload, client)
+//   );
+
+//   function ready() {
+//     sendCoordinates(client);
+//     setTimeout(() => {
+//       inquirer
+//         .prompt([
+//           {
+//             type: 'list',
+//             name: 'sendAttack',
+//             message: 'Do you want to send another attack?',
+//             choices: ['Yes', 'No'],
+//           },
+//         ])
+//         .then((answers) => {
+//           if (answers.name === 'Yes') {
+//             acknowledgedAttack(payload, client);
+//             sendCoordinates(client);
+//           } else {
+//             console.log('Goodbye');
+//           }
+//         });
+//     }, chance.integer({ min: 5000, max: 10000 }));
+//   }
+//   ready();
+// }
+
+function acknowledgedAttack(payload, client) {
+  console.log('Target Hit', payload.countryId);
+  client.emit('received', payload);
+  // client.emit(EventNames.delivered, payload);
+
 }
 
 function ready() {
@@ -137,7 +283,9 @@ function attackChance(payload, client) {
 }
 
 function handleSentAttack(payload, client) {
+
   console.log(`Waiting for Player ${3 - payload.player}'s response`);
+
   setTimeout(
     () => attackChance(payload, client),
     chance.integer({ min: 5000, max: 10000 })

@@ -36,4 +36,6 @@ socket.on('disconnect', () => {
 
 // Call your game-related functions here as needed
 startPlayer1(socket);
-// attackStarting(socket);
+
+// attackStarting(client);
+
