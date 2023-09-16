@@ -13,56 +13,6 @@ const country1AttackQueue = new Queue();
 let consoleLogShown = false;
 let userConsoleLog = false;
 
-function sendCoordinates(client) {
-  const event = {
-    country: chance.country({ full: true }),
-    coordinates: ` Attacking on coordinates: ${chance.coordinates({
-      fixed: 2,
-    })}`,
-    countryBeingAttack: chance.country({ full: true }),
-    typeofAttack: chance.pickone(['Air', 'Land', 'Sea']),
-    damage: `${chance.integer({ min: 1000, max: 2500 })}`,
-    health: 10000,
-  };
-
-  const payload = {
-    event: 'gameStart',
-    messageId: event.orderId,
-    clientId: event.country,
-    countryId: event.countryBeingAttack,
-    order: event,
-    damage: event.damage,
-    health: event.health,
-  };
-  console.log('Waiting on enemy response', event);
-  client.emit(EventNames.gameStart, payload);
-}
-
-function acknowledgedAttack(payload, client) {
-  console.log('Target Hit', payload.countryId);
-  client.emit('received', payload);
-}
-function failedAttack(payload, client) {
-  console.log('Target Missed', payload.countryId);
-  client.emit('received', payload);
-}
-
-function attackStarting(client) {
-  console.log('Commencing attack!');
-  client.on(EventNames.delivered, (payload) =>
-    acknowledgedAttack(payload, client)
-  );
-  client.on(EventNames.attackFailed, (payload) =>
-    failedAttack(payload, client)
-  );
-
-  function ready() {
-    sendCoordinates(client);
-    // setTimeout(ready, chance.integer({ min: 5000, max: 10000 }));
-  }
-  ready();
-}
-
 function handleGameStart(payload, client) {
   if (!consoleLogShown) {
     console.log('The user has requested to start the game');
@@ -77,7 +27,7 @@ function handleGameStart(payload, client) {
   }
 }
 
-function handleDeliveredAttack(payload, socket) {
+function handleConfirmedAttack(payload, socket) {
   console.log(`the attack for ${payload.countryId} has been confirmed`);
   {
     country1AttackQueue.enqueue(payload);
@@ -98,8 +48,8 @@ function handleUserReady(socket) {
   }
 }
 
-function handleReceived(payload, socket) {
-  console.log('Country knows about the attack');
+function handleKnown(payload, socket) {
+  console.log(payload.countryId, 'knows about the attack');
   {
     country1AttackQueue.dequeue(payload);
   }
@@ -111,11 +61,9 @@ function handleConnection(socket) {
   socket.on(EventNames.gameStart, handleGameStart);
   socket.on(EventNames.ready, (payload) => handleUserReady(socket));
   socket.on(EventNames.delivered, (payload) =>
-    handleDeliveredAttack(payload, socket)
+    handleConfirmedAttack(payload, socket)
   );
-  socket.on(EventNames.received, (payload) => handleReceived(socket));
-
-  attackStarting(socket);
+  socket.on(EventNames.received, (payload) => handleKnown(payload, socket));
 }
 
 function startServer() {
@@ -127,6 +75,6 @@ module.exports = {
   startServer,
   io,
   handleGameStart,
-  handleDeliveredAttack,
+  handleConfirmedAttack,
   handleConnection,
 };
