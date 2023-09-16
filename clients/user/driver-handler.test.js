@@ -1,18 +1,18 @@
 const { EventNames } = require('../../utilities');
 const {
-  toTest: { deliver, handleGameStart },
+  toTest: { attackChance, handleGameStart },
 } = require('./handler.js');
 
 // this test does not match the demo code, it is from my caps project, but you can use it as a reference
 jest.useFakeTimers();
 
 describe('Tests the driver handler functions', () => {
-  test('Driver deliver', () => {
+  test('Driver attackChance', () => {
     // Arrange
     const io = { emit: jest.fn() };
 
     // Act
-    deliver('1234', io);
+    attackChance('1234', io);
 
     // Assert
     expect(io.emit).toHaveBeenCalledWith(EventNames.delivered, '1234');
