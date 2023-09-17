@@ -1,18 +1,18 @@
 const { chance, EventNames } = require('../../utilities');
 
-let numberOfPlayers = 1;
-let isWaitingForUserInput = true;
-
-function setNumberOfPlayers(players) {
-  numberOfPlayers = players;
-  console.log(`Number of players set to: ${numberOfPlayers}`);
-}
-
 const inquirer = require('inquirer');
 const { io } = require('socket.io-client');
 
 const client = io('ws://localhost:3000');
 
+let numberOfPlayers = 1;
+let isWaitingForUserInput = true;
+let startGameAnswers;
+
+function setNumberOfPlayers(players) {
+  numberOfPlayers = players;
+  console.log(`Number of players set to: ${numberOfPlayers}`);
+}
 
 function login() {
   console.log(`
@@ -32,84 +32,150 @@ function login() {
     ░╚═════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚═════╝░
 
         `);
-
   inquirer
     .prompt([
       {
         type: 'list',
-        name: 'choices',
+        name: 'startGame',
         message: 'Do you want to start the game?',
         choices: ['Yes', 'No'],
       },
+      {
+        type: 'confirm',
+        name: 'enableChat',
+        message: 'Do you want to enable chat messaging?',
+        default: false,
+      },
     ])
     .then((answers) => {
-      if (answers.choices === 'Yes') {
-        inquirer
-          .prompt([
-            {
-              type: 'input',
-              name: 'username',
-              message: 'Enter your username:',
-            },
-            {
-              type: 'password',
-              name: 'password',
-              message: 'Enter your password:',
-              mask: '*',
-            },
-          ])
-          .then((answers) => {
-            startUser(client);
-            inquirer
-              .prompt([
-                {
-                  type: 'list',
-                  name: 'choices',
-                  message: 'Do you want to attack?',
-                  choices: ['Yes', 'No'],
-                },
-              ])
-              .then((answers) => {
-                if (answers.choices === 'Yes') {
-                  inquirer
-                    .prompt([
-                      {
-                        type: 'list',
-                        name: 'coordinates',
-                        message: 'Select your attacking ',
-                        choices: [
-                          `${chance.coordinates({
-                            fixed: 2,
-                          })}`,
-                          `${chance.coordinates({
-                            fixed: 2,
-                          })}`,
-                          `${chance.coordinates({
-                            fixed: 2,
-                          })}`,
-                        ],
-                      },
-                    ])
-                    .then((answers) => {
-                      console.log(
-                        'Attacking on coordinates: ' + answers.coordinates
-                      );
+      startGameAnswers = answers; // Assign the answers to startGameAnswers
 
-                      attackStarting(client);
-                    });
-                } else {
-                  console.log('Goodbye');
-                }
-              });
-          });
+      if (startGameAnswers.startGame === 'Yes') {
+        return inquirer.prompt([
+          {
+            type: 'list',
+            name: 'numPlayers',
+            message: 'How many players do you want to play with? (1 or 2)',
+            choices: ['1', '2'],
+          },
+        ]);
       } else {
         console.log('Goodbye');
+        // Handle the "No" choice here or exit the program
+        return Promise.reject('Game not started');
+      }
+    })
+    .then((numPlayersAnswers) => {
+      // Handle the number of players here
+      const numPlayers = parseInt(numPlayersAnswers.numPlayers);
+
+      if (numPlayers === 1) {
+        console.log('You selected 1 player game.');
+      } else {
+        console.log('You selected 2 player game.');
+      }
+    })
+    .catch((error) => {
+      if (error !== 'Game not started' && error !== 'Game ended') {
+        console.error('An error occurred:', error);
+      }
+    })
+    .then(() => {
+      // Check if chat messaging is enabled
+      if (startGameAnswers.enableChat) {
+        // Start the chat messaging system
+        startChatMessaging(client);
+      }
+
+      // Continue with login logic
+      return inquirer.prompt([
+        {
+          type: 'input',
+          name: 'username',
+          message: 'Enter your username:',
+        },
+        {
+          type: 'password',
+          name: 'password',
+          message: 'Enter your password:',
+          mask: '*',
+        },
+      ]);
+    })
+    .then((loginAnswers) => {
+      // Handle login details here
+      const username = loginAnswers.username;
+      const password = loginAnswers.password;
+
+      console.log(`Logged in as ${username}`);
+
+      return inquirer.prompt([
+        {
+          type: 'list',
+          name: 'attackChoice',
+          message: 'Do you want to attack?',
+          choices: ['Yes', 'No'],
+        },
+      ]);
+    })
+    .then((attackChoiceAnswers) => {
+      if (attackChoiceAnswers.attackChoice === 'Yes') {
+        return inquirer.prompt([
+          {
+            type: 'list',
+            name: 'coordinates',
+            message: 'Select your attacking coordinates:',
+            choices: ['Coordinate 1', 'Coordinate 2', 'Coordinate 3'],
+          },
+        ]);
+      } else {
+        console.log('Goodbye');
+        // Handle the "No" choice here or exit the program
+        return Promise.reject('Game ended');
+      }
+    })
+    .then((attackCoordinatesAnswers) => {
+      // Handle attack coordinates here
+      const attackCoordinates = attackCoordinatesAnswers.coordinates;
+      console.log(`Attacking at ${attackCoordinates}`);
+      // Continue with your logic here
+    })
+    .catch((error) => {
+      if (error !== 'Game not started' && error !== 'Game ended') {
+        console.error('An error occurred:', error);
       }
     });
 }
 
-login();
+function startChatMessaging(client) {
+  inquirer
+    .prompt([
+      {
+        type: 'input',
+        name: 'message',
+        message: 'Enter your message (or type "exit" to quit chat):',
+      },
+    ])
+    .then((messageAnswers) => {
+      const message = messageAnswers.message;
 
+      if (message.toLowerCase() === 'exit') {
+        // Exit the chat messaging system
+        return;
+      }
+
+      // Send the message to the server or other players
+      client.emit(EventNames.chatMessage, message);
+
+      // Continue receiving messages
+      startChatMessaging(client);
+    })
+    .catch((error) => {
+      console.error('An error occurred in chat messaging:', error);
+    });
+}
+
+login();
 
 function sendCoordinates(client) {
   if (isWaitingForUserInput) {
@@ -123,7 +189,7 @@ function sendCoordinates(client) {
         setNumberOfPlayers(inputNumber);
         isWaitingForUserInput = false;
         console.log(`Number of players set to: ${inputNumber}`);
-        startGame(client);
+        startPlayer1(client);
       } else {
         console.log('Invalid input. Please enter 1 or 2.');
         sendCoordinates(client); // Continue waiting for valid input
@@ -174,6 +240,7 @@ function sendCoordinates(client) {
     handleAttackResponse(responsePayload, client)
   );
 }
+
 function handleAttackResponse(responsePayload, client) {
   console.log(`Player ${responsePayload.player} responded:`);
 
@@ -190,6 +257,7 @@ function handleAttackResponse(responsePayload, client) {
   // Continue the game by sending coordinates for the next attack
   sendCoordinates(client);
 }
+
 function attackStarting(client) {
   console.log('Commencing attack!');
   client.on(EventNames.delivered, (payload) =>
@@ -198,11 +266,9 @@ function attackStarting(client) {
   client.on(EventNames.attackFailed, (payload) =>
     failedAttack(payload, client)
   );
-
-
-  // Start the game by sending coordinates
-  sendCoordinates(client);
-
+}
+// Start the game by sending coordinates
+sendCoordinates(client);
 
 // function attackStarting(client) {
 //   console.log('Commencing attack!');
@@ -242,7 +308,6 @@ function acknowledgedAttack(payload, client) {
   console.log('Target Hit', payload.countryId);
   client.emit('received', payload);
   // client.emit(EventNames.delivered, payload);
-
 }
 
 function ready() {
@@ -283,7 +348,6 @@ function attackChance(payload, client) {
 }
 
 function handleSentAttack(payload, client) {
-
   console.log(`Waiting for Player ${3 - payload.player}'s response`);
 
   setTimeout(
@@ -295,11 +359,8 @@ function startPlayer1(client) {
   console.log(`Player 1 (ID: ${client.id}) has entered the game`);
   client.emit(EventNames.ready);
   client.on(EventNames.chatMessage, (message) => {
-    client.emit(EventNames.chatMessage, message);
+    console.log(`Player ${client.id} says: ${message}`);
   });
-  // client.on(EventNames.chatMessage, (message) => {
-  //   console.log(`Player (ID: ${client.id}) sent a message: ${message.message}`);
-  // });
   client.on(EventNames.readyToPlay, () => {
     isWaitingForUserInput = false;
     attackStarting(client);
