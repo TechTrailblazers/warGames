@@ -12,7 +12,9 @@ const inquirer = require('inquirer');
 const { io } = require('socket.io-client');
 
 const client = io('ws://localhost:3000');
-
+client.on('connect', () => {
+  console.log('Connected to the server');
+});
 
 function login() {
   console.log(`
@@ -59,7 +61,8 @@ function login() {
             },
           ])
           .then((answers) => {
-            startUser(client);
+            // startUser(client);
+            startPlayer1(client);
             inquirer
               .prompt([
                 {
@@ -95,7 +98,9 @@ function login() {
                         'Attacking on coordinates: ' + answers.coordinates
                       );
 
-                      attackStarting(client);
+                      // attackStarting(client);
+
+                      sendCoordinates(client);
                     });
                 } else {
                   console.log('Goodbye');
@@ -110,8 +115,8 @@ function login() {
 
 login();
 
-
 function sendCoordinates(client) {
+  console.log('in sendCoordinates function ', isWaitingForUserInput);
   if (isWaitingForUserInput) {
     console.log('Waiting for user to enter the number of players (1 or 2):');
 
@@ -119,20 +124,20 @@ function sendCoordinates(client) {
     process.stdin.once('data', (input) => {
       const inputNumber = parseInt(input.toString().trim());
 
-      if (inputNumber === 1 || inputNumber === 2) {
-        setNumberOfPlayers(inputNumber);
+      if ((inputNumber === 1 || inputNumber === 2) && isWaitingForUserInput) {
+        // setNumberOfPlayers(inputNumber);
+        numberOfPlayers = inputNumber;
         isWaitingForUserInput = false;
         console.log(`Number of players set to: ${inputNumber}`);
-        startGame(client);
+        // startGame(client);
       } else {
-        console.log('Invalid input. Please enter 1 or 2.');
+        // console.log('Invalid input. Please enter 1 or 2.');
         sendCoordinates(client); // Continue waiting for valid input
       }
+      return;
     });
-
-    return;
   }
-
+  console.log('made it pass 1st gate');
   const event = {
     country: chance.country({ full: true }),
     coordinates: ` Attacking on coordinates: ${chance.coordinates({
@@ -174,6 +179,7 @@ function sendCoordinates(client) {
     handleAttackResponse(responsePayload, client)
   );
 }
+
 function handleAttackResponse(responsePayload, client) {
   console.log(`Player ${responsePayload.player} responded:`);
 
@@ -198,11 +204,10 @@ function attackStarting(client) {
   client.on(EventNames.attackFailed, (payload) =>
     failedAttack(payload, client)
   );
+}
 
-
-  // Start the game by sending coordinates
-  sendCoordinates(client);
-
+// Start the game by sending coordinates
+sendCoordinates(client);
 
 // function attackStarting(client) {
 //   console.log('Commencing attack!');
@@ -242,7 +247,6 @@ function acknowledgedAttack(payload, client) {
   console.log('Target Hit', payload.countryId);
   client.emit('received', payload);
   // client.emit(EventNames.delivered, payload);
-
 }
 
 function ready() {
@@ -283,7 +287,6 @@ function attackChance(payload, client) {
 }
 
 function handleSentAttack(payload, client) {
-
   console.log(`Waiting for Player ${3 - payload.player}'s response`);
 
   setTimeout(

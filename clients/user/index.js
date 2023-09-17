@@ -38,4 +38,3 @@ socket.on('disconnect', () => {
 startPlayer1(socket);
 
 // attackStarting(client);
-
