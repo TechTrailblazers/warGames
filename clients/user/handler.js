@@ -302,6 +302,15 @@ async function attackChanceLoop(
         computerHealth
       );
 
+      if (computerAttackEvent.success) {
+        // Only update computer's health if the attack is successful
+        const computerDamage = computerAttackEvent.damage;
+        computerHealth = calculateComputerHealth(
+          computerHealth,
+          computerDamage
+        ); // Update computer's health
+      }
+
       await performComputerAttack(client, computerAttackEvent);
 
       if (userHealth <= 0 || computerHealth <= 0) {
@@ -511,33 +520,31 @@ async function performComputerAttack(client, computerAttackPayload) {
 }
 
 function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
-  const successChance = 0.6;
+  const successChance = 0.8;
   const damage = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
+
+  const isSuccessful = Math.random() <= successChance;
 
   // Calculate the new health after deducting damage
   const newHealth = calculateComputerHealth(currentHealth, damage);
 
-  const attackEvent = {
-    damage: damage,
-    health: newHealth,
-  };
-
-  if (Math.random() <= successChance) {
+  if (isSuccessful) {
     console.log(
       `${attackCity} (Computer) has successfully hit ${defendCity} - Damage: ${damage} - Health Remaining: ${newHealth}`
     );
-    // Handle other actions when the computer's attack is successful
 
     if (newHealth <= 0) {
       console.log(`${defendCity} is defeated!`);
-      // Handle the defeated country (e.g., remove it from the game)
     }
   } else {
     console.log(`${attackCity} (Computer)'s attack has missed ${defendCity}`);
-    // Handle other actions when the computer's attack misses
   }
 
-  return attackEvent;
+  return {
+    success: isSuccessful,
+    damage: damage,
+    health: newHealth,
+  };
 }
 
 async function askToPlayAgain(username, enableChat) {
