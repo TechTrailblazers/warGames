@@ -1,9 +1,6 @@
 const { chance, EventNames } = require('../../utilities');
 
-const inquirer = require('inquirer');
-const { io } = require('socket.io-client');
 
-const client = io('ws://localhost:3000');
 
 let numberOfPlayers = 1;
 let isWaitingForUserInput = true;
@@ -13,6 +10,15 @@ function setNumberOfPlayers(players) {
   numberOfPlayers = players;
   console.log(`Number of players set to: ${numberOfPlayers}`);
 }
+
+
+const inquirer = require('inquirer');
+const { io } = require('socket.io-client');
+
+const client = io('ws://localhost:3000');
+client.on('connect', () => {
+  console.log('Connected to the server');
+});
 
 function login() {
   console.log(`
@@ -48,86 +54,70 @@ function login() {
       },
     ])
     .then((answers) => {
-      startGameAnswers = answers; // Assign the answers to startGameAnswers
 
-      if (startGameAnswers.startGame === 'Yes') {
-        return inquirer.prompt([
-          {
-            type: 'list',
-            name: 'numPlayers',
-            message: 'How many players do you want to play with? (1 or 2)',
-            choices: ['1', '2'],
-          },
-        ]);
-      } else {
-        console.log('Goodbye');
-        // Handle the "No" choice here or exit the program
-        return Promise.reject('Game not started');
-      }
-    })
-    .then((numPlayersAnswers) => {
-      // Handle the number of players here
-      const numPlayers = parseInt(numPlayersAnswers.numPlayers);
+      if (answers.choices === 'Yes') {
+        inquirer
+          .prompt([
+            {
+              type: 'input',
+              name: 'username',
+              message: 'Enter your username:',
+            },
+            {
+              type: 'password',
+              name: 'password',
+              message: 'Enter your password:',
+              mask: '*',
+            },
+          ])
+          .then((answers) => {
+            // startUser(client);
+            startPlayer1(client);
+            inquirer
+              .prompt([
+                {
+                  type: 'list',
+                  name: 'choices',
+                  message: 'Do you want to attack?',
+                  choices: ['Yes', 'No'],
+                },
+              ])
+              .then((answers) => {
+                if (answers.choices === 'Yes') {
+                  inquirer
+                    .prompt([
+                      {
+                        type: 'list',
+                        name: 'coordinates',
+                        message: 'Select your attacking ',
+                        choices: [
+                          `${chance.coordinates({
+                            fixed: 2,
+                          })}`,
+                          `${chance.coordinates({
+                            fixed: 2,
+                          })}`,
+                          `${chance.coordinates({
+                            fixed: 2,
+                          })}`,
+                        ],
+                      },
+                    ])
+                    .then((answers) => {
+                      console.log(
+                        'Attacking on coordinates: ' + answers.coordinates
+                      );
 
-      if (numPlayers === 1) {
-        console.log('You selected 1 player game.');
-      } else {
-        console.log('You selected 2 player game.');
-      }
-    })
-    .catch((error) => {
-      if (error !== 'Game not started' && error !== 'Game ended') {
-        console.error('An error occurred:', error);
-      }
-    })
-    .then(() => {
-      // Check if chat messaging is enabled
-      if (startGameAnswers.enableChat) {
-        // Start the chat messaging system
-        startChatMessaging(client);
-      }
+                      // attackStarting(client);
 
-      // Continue with login logic
-      return inquirer.prompt([
-        {
-          type: 'input',
-          name: 'username',
-          message: 'Enter your username:',
-        },
-        {
-          type: 'password',
-          name: 'password',
-          message: 'Enter your password:',
-          mask: '*',
-        },
-      ]);
-    })
-    .then((loginAnswers) => {
-      // Handle login details here
-      const username = loginAnswers.username;
-      const password = loginAnswers.password;
+                      sendCoordinates(client);
+                    });
+                } else {
+                  console.log('Goodbye');
+                }
+              });
+          });
 
-      console.log(`Logged in as ${username}`);
-
-      return inquirer.prompt([
-        {
-          type: 'list',
-          name: 'attackChoice',
-          message: 'Do you want to attack?',
-          choices: ['Yes', 'No'],
-        },
-      ]);
-    })
-    .then((attackChoiceAnswers) => {
-      if (attackChoiceAnswers.attackChoice === 'Yes') {
-        return inquirer.prompt([
-          {
-            type: 'list',
-            name: 'coordinates',
-            message: 'Select your attacking coordinates:',
-            choices: ['Coordinate 1', 'Coordinate 2', 'Coordinate 3'],
-          },
-        ]);
       } else {
         console.log('Goodbye');
         // Handle the "No" choice here or exit the program
@@ -164,6 +154,7 @@ function startChatMessaging(client) {
         return;
       }
 
+
       // Send the message to the server or other players
       client.emit(EventNames.chatMessage, message);
 
@@ -177,7 +168,9 @@ function startChatMessaging(client) {
 
 login();
 
+
 function sendCoordinates(client) {
+  console.log('in sendCoordinates function ', isWaitingForUserInput);
   if (isWaitingForUserInput) {
     console.log('Waiting for user to enter the number of players (1 or 2):');
 
@@ -185,20 +178,24 @@ function sendCoordinates(client) {
     process.stdin.once('data', (input) => {
       const inputNumber = parseInt(input.toString().trim());
 
-      if (inputNumber === 1 || inputNumber === 2) {
-        setNumberOfPlayers(inputNumber);
+      if ((inputNumber === 1 || inputNumber === 2) && isWaitingForUserInput) {
+        // setNumberOfPlayers(inputNumber);
+        numberOfPlayers = inputNumber;
         isWaitingForUserInput = false;
         console.log(`Number of players set to: ${inputNumber}`);
+
         startPlayer1(client);
+
+        // startGame(client);
+
       } else {
-        console.log('Invalid input. Please enter 1 or 2.');
+        // console.log('Invalid input. Please enter 1 or 2.');
         sendCoordinates(client); // Continue waiting for valid input
       }
+      return;
     });
-
-    return;
   }
-
+  console.log('made it pass 1st gate');
   const event = {
     country: chance.country({ full: true }),
     coordinates: ` Attacking on coordinates: ${chance.coordinates({
@@ -267,6 +264,7 @@ function attackStarting(client) {
     failedAttack(payload, client)
   );
 }
+
 // Start the game by sending coordinates
 sendCoordinates(client);
 
