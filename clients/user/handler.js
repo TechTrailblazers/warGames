@@ -164,18 +164,35 @@ async function startGameLogic(client, payload, username, enableChat) {
       const attackCity = attackCoordinatesAnswers.coordinates;
       console.log('Attacking ' + attackCity);
 
-      const payload = {
+      // Store the selected countries in variables
+      const userDefendCity = defendCity;
+      const userAttackCity = attackCity;
+
+      const userAttackPayload = {
         event: 'gameStart',
         attackSent: 0, // Initialize with 0, update as needed
-        clientId: defendCity,
-        countryId: attackCity,
+        clientId: userDefendCity,
+        countryId: userAttackCity,
         order: {},
         damage: 0, // Initialize with 0, update as needed
         health: 0, // Initialize with 0, update as needed
       };
 
       // Call the appropriate game function here
-      await attackChanceLoop(client, defendCity, attackCity);
+      await attackChanceLoop(
+        client,
+        userDefendCity,
+        userAttackCity,
+        userAttackPayload
+      );
+
+      // Simulate the computer's attack after the user's attack
+      const computerAttackPayload = generateComputerAttackEvent(
+        userDefendCity,
+        userAttackCity
+      ); // Pass both cities as arguments
+      await performComputerAttack(client, computerAttackPayload);
+
       // Further processing related to coordinates
       // if (attackCoordinatesAnswers.sendAttack === 'Yes') {
       //   acknowledgedAttack(payload, client);
@@ -217,33 +234,99 @@ async function startChatMessaging(client) {
 
 login();
 
-function sendCoordinates(client) {
-  inquirer
-    .prompt([
-      {
-        type: 'confirm',
-        name: 'attackConfirmed',
-        message: 'Do you want to proceed with the attack?',
-        default: true,
-      },
-    ])
-    .then((attackAnswers) => {
-      if (attackAnswers.attackConfirmed) {
-        // Generate the event based on user's answers
-        // attackChance();
-        // if (numberOfPlayers === 2) {
-        //   payload.player = 3 - payload.player; // Toggle between 1 and 2
-        // }
-        // // Emit the 'gameStart' event to the other player(s)
-        // client.emit(EventNames.gameStart, payload);
-        // // Wait for the other player's response
-        // client.on(EventNames.attackResponse, (responsePayload) =>
-        //   handleAttackResponse(responsePayload, client)
-        // );
-      } else {
-        console.log('Goodbye');
+// function sendCoordinates(client, attackChanceLoopCallback) {
+//   inquirer
+//     .prompt([
+//       {
+//         type: 'confirm',
+//         name: 'attackConfirmed',
+//         message: 'Do you want to proceed with the attack?',
+//         default: true,
+//       },
+//     ])
+//     .then((attackAnswers) => {
+//       if (attackAnswers.attackConfirmed) {
+//         // Call the attackChanceLoop with the callback
+//         attackChanceLoopCallback();
+//       } else {
+//         console.log('Goodbye');
+//         // You can also handle game termination here if needed.
+//       }
+//     });
+// }
+
+function calculateUserHealth(currentHealth, damage) {
+  // Ensure the health doesn't go below 0
+  const newHealth = Math.max(currentHealth - damage, 0);
+  return newHealth;
+}
+
+function calculateComputerHealth(currentHealth, damage) {
+  // Ensure the health doesn't go below 0
+  const newHealth = Math.max(currentHealth - damage, 0);
+  return newHealth;
+}
+async function attackChanceLoop(
+  client,
+  defendCity,
+  attackCity,
+  userAttackPayload
+) {
+  const successChance = 0.6;
+
+  let userHealth = 10000; // Initialize user's health to 10000
+  let computerHealth = 10000;
+
+  while (userHealth > 0 && computerHealth > 0) {
+    // Generate a random number between 0 and 1
+    const randomValue = Math.random();
+
+    const userAttackEvent = {
+      damage: Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000,
+      health: userHealth,
+    };
+
+    if (randomValue <= successChance) {
+      // Attack is successful
+      const userDamage = userAttackEvent.damage;
+      userHealth = calculateUserHealth(userHealth, userDamage); // Update user's health
+      // computerHealth = calculateComputerHealth(computerHealth, userDamage); // Update computer's health
+      console.log(
+        `${defendCity} has successfully hit ${attackCity} - Damage: ${userDamage} - Health Remaining: ${userHealth}`
+      );
+
+      // Simulate the computer's attack after the user's attack
+      const computerAttackEvent = generateComputerAttackEvent(
+        defendCity,
+        attackCity,
+        computerHealth
+      );
+
+      await performComputerAttack(client, computerAttackEvent);
+
+      if (userHealth <= 0 || computerHealth <= 0) {
+        console.log('Game Over');
+        askToPlayAgain();
+        return; // Exit the loop and the function
       }
-    });
+    } else {
+      console.log(`${defendCity}'s attack has missed ${attackCity}`);
+    }
+
+    const sendAnotherAttackAnswers = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'sendAttack',
+        message: 'Do you want to send another attack?',
+        choices: ['Yes', 'No'],
+      },
+    ]);
+
+    if (sendAnotherAttackAnswers.sendAttack === 'No') {
+      console.log('Goodbye');
+      throw new Error('Game ended');
+    }
+  }
 }
 
 // function handleAttackResponse(responsePayload, client) {
@@ -309,11 +392,11 @@ function sendCoordinates(client) {
 //   ready();
 // }
 
-function acknowledgedAttack(payload, client) {
-  // console.log('Target Hit', payload.attackCity);
-  // client.emit('received', payload);
-  // client.emit(EventNames.delivered, payload);
-}
+// function acknowledgedAttack(payload, client) {
+//   // console.log('Target Hit', payload.attackCity);
+//   // client.emit('received', payload);
+//   // client.emit(EventNames.delivered, payload);
+// }
 
 // function ready() {
 //   sendCoordinates(client);
@@ -322,68 +405,141 @@ function acknowledgedAttack(payload, client) {
 //   ready();
 // }
 
-async function attackChanceLoop(client, defendCity, attackCity) {
-  const successChance = 0.6;
+// async function attackChanceLoop(
+//   client,
+//   defendCity,
+//   attackCity,
+//   userAttackPayload
+// ) {
+//   const successChance = 0.6;
 
-  let health = 10000; // Initialize health to 10000
+//   let userHealth = 10000; // Initialize user's health to 10000
+//   let computerHealth = 10000;
 
-  while (health > 0) {
-    // Generate a random number between 0 and 1
-    const randomValue = Math.random();
+//   while (userHealth > 0 && computerHealth > 0) {
+//     // Generate a random number between 0 and 1
+//     const randomValue = Math.random();
 
-    const event = {
-      damage: Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000, // Generate random damage between 1000 and 2500
-      health: health, // Use the current health value
-    };
+//     const userAttackEvent = {
+//       damage: Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000,
+//       health: userHealth,
+//     };
 
-    if (randomValue <= successChance) {
-      // Attack is successful
-      event.health -= event.damage; // Update the health value
-      console.log(
-        `${defendCity} has successfully hit ${attackCity} - Damage: ${event.damage} - Health Remaining: ${event.health}`
-      );
-      // client.emit(EventNames.delivered, payload);
-      // client.emit(EventNames.ready);
+//     if (randomValue <= successChance) {
+//       // Attack is successful
+//       userAttackEvent.health -= userAttackEvent.damage; // Update the health value
+//       computerHealth -= userAttackEvent.damage;
+//       console.log(
+//         `${defendCity} has successfully hit ${attackCity} - Damage: ${userAttackEvent.damage} - Health Remaining: ${userAttackEvent.health}`
+//       );
 
-      const sendAnotherAttackAnswers = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'sendAttack',
-          message: 'Do you want to send another attack?',
-          choices: ['Yes', 'No'],
-        },
-      ]);
+//       // Simulate the computer's attack after the user's attack
+//       const computerAttackEvent = generateComputerAttackEvent(
+//         defendCity,
+//         attackCity,
+//         computerHealth
+//       );
 
-      if (sendAnotherAttackAnswers.sendAttack === 'Yes') {
-        acknowledgedAttack(payload, client);
-        // Update payload.health based on your game logic here
-      } else {
-        console.log('Goodbye');
-        throw new Error('Game ended');
-      }
-    } else {
-      console.log(`${defendCity}'s attack has missed ${attackCity}`);
-      // client.emit(EventNames.attackFailed, payload);
-      // client.emit(EventNames.ready);
-    }
+//       await performComputerAttack(client, computerAttackEvent);
 
-    health = event.health; // Update the health variable with the new value
+//       // Continue with user's attack
+//       const sendAnotherAttackAnswers = await inquirer.prompt([
+//         {
+//           type: 'list',
+//           name: 'sendAttack',
+//           message: 'Do you want to send another attack?',
+//           choices: ['Yes', 'No'],
+//         },
+//       ]);
 
-    if (health <= 0) {
-      console.log('Game Over');
-      askToPlayAgain();
-    }
+//       if (sendAnotherAttackAnswers.sendAttack === 'Yes') {
+//         userAttackPayload.damage = userAttackEvent.damage; // Update the user's attack damage
+//         await attackChanceLoop(
+//           client,
+//           defendCity,
+//           attackCity,
+//           userAttackPayload
+//         );
+//       } else {
+//         console.log('Goodbye');
+//         throw new Error('Game ended');
+//       }
+//     } else {
+//       console.log(`${defendCity}'s attack has missed ${attackCity}`);
+//       // Continue with user's attack
+//       const sendAnotherAttackAnswers = await inquirer.prompt([
+//         {
+//           type: 'list',
+//           name: 'sendAttack',
+//           message: 'Do you want to send another attack?',
+//           choices: ['Yes', 'No'],
+//         },
+//       ]);
 
-    sendCoordinates(client); // Call playGame with the updated payload
-    // if (!(await askToPlayAgain())) {
-    //   console.log('Goodbye');
-    //   return; // Exit the entire function if the player chooses not to play again
-    // }
+//       if (sendAnotherAttackAnswers.sendAttack === 'Yes') {
+//         userAttackPayload.damage = userAttackEvent.damage; // Update the user's attack damage
+//         await attackChanceLoop(
+//           client,
+//           defendCity,
+//           attackCity,
+//           userAttackPayload
+//         );
+//       } else {
+//         console.log('Goodbye');
+//         throw new Error('Game ended');
+//       }
+//     }
+//     userHealth = userAttackEvent.health;
+//     computerHealth = computerAttackEvent.health;
 
-    // console.log('Starting a new game...\n');
-    // await startPlayer1(client); // Start a new game if the player chooses to play again
-  }
+//     if (userHealth <= 0 || computerHealth <= 0) {
+//       console.log('Game Over');
+//       askToPlayAgain();
+//     }
+
+//     sendCoordinates(client, userAttackPayload); // Call playGame with the updated payload
+//   }
+// }
+
+async function performComputerAttack(client, computerAttackPayload) {
+  // Simulate the computer's attack logic here
+  // You can generate the attack payload and send it to the user
+  // console.log('Simulating computer attack:');
+  // console.log(computerAttackPayload);
+  // You can emit the attack event to send it to the user
+  // client.emit('computerAttackEvent', computerAttackPayload);
 }
+
+function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
+  const successChance = 0.6;
+  const damage = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
+
+  // Calculate the new health after deducting damage
+  const newHealth = calculateComputerHealth(currentHealth, damage);
+
+  const attackEvent = {
+    damage: damage,
+    health: newHealth,
+  };
+
+  if (Math.random() <= successChance) {
+    console.log(
+      `${attackCity} (Computer) has successfully hit ${defendCity} - Damage: ${damage} - Health Remaining: ${newHealth}`
+    );
+    // Handle other actions when the computer's attack is successful
+
+    if (newHealth <= 0) {
+      console.log(`${defendCity} is defeated!`);
+      // Handle the defeated country (e.g., remove it from the game)
+    }
+  } else {
+    console.log(`${attackCity} (Computer)'s attack has missed ${defendCity}`);
+    // Handle other actions when the computer's attack misses
+  }
+
+  return attackEvent;
+}
+
 async function askToPlayAgain(username, enableChat) {
   let playAgainAnswers = await inquirer.prompt([
     {
