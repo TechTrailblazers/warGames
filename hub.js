@@ -66,22 +66,41 @@ function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
   connectedUsers.set(socket.id, socket);
 
-  socket.on('chatMessage', (message) => {
-    handleChatMessage(message, socket);
-  });
+  socket.on('chosenNumPlayers', (numPlayers) => {
+    if (numPlayers === 1 || numPlayers === 2) {
+      // Handle the chosen number of players here as needed
+      const player = {
+        socket,
+        numPlayers,
+        // Other player-specific data
+      };
 
-  socket.on(EventNames.gameStart, handleGameStart);
+      // Emit a custom event to inform the client about the chosen number of players
+      socket.emit('numPlayersChosen', numPlayers);
 
-  socket.on(EventNames.ready, () => {
-    handleUserReady(socket);
-  });
+      // Continue with your event handling logic
+      socket.on('chatMessage', (message) => {
+        handleChatMessage(message, socket);
+      });
 
-  socket.on(EventNames.received, (payload) => handleKnown(payload, socket));
+      socket.on(EventNames.gameStart, handleGameStart);
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected: ', socket.id);
-    connectedUsersCount--;
-    connectedUsers.delete(socket.id);
+      socket.on(EventNames.ready, () => {
+        handleUserReady(socket);
+      });
+
+      socket.on(EventNames.received, (payload) => handleKnown(payload, socket));
+
+      socket.on('disconnect', () => {
+        console.log('User disconnected: ', socket.id);
+        connectedUsersCount--;
+        connectedUsers.delete(socket.id);
+      });
+    } else {
+      // Invalid input, you can handle this case accordingly
+      socket.emit('invalidInput', 'Please choose 1 or 2 players.');
+      socket.disconnect(); // Disconnect the user
+    }
   });
 }
 
