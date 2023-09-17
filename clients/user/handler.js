@@ -320,6 +320,24 @@ async function attackChanceLoop(
       }
     } else {
       console.log(`${defendCity}'s attack has missed ${attackCity}`);
+
+      // Simulate the computer's attack after the user's attack
+      const computerAttackEvent = generateComputerAttackEvent(
+        defendCity,
+        attackCity,
+        computerHealth
+      );
+
+      if (computerAttackEvent.success) {
+        // Only update computer's health if the attack is successful
+        const computerDamage = computerAttackEvent.damage;
+        computerHealth = calculateComputerHealth(
+          computerHealth,
+          computerDamage
+        ); // Update computer's health
+      }
+
+      await performComputerAttack(client, computerAttackEvent);
     }
 
     const sendAnotherAttackAnswers = await inquirer.prompt([
@@ -520,7 +538,7 @@ async function performComputerAttack(client, computerAttackPayload) {
 }
 
 function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
-  const successChance = 0.8;
+  const successChance = 0.7;
   const damage = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
 
   const isSuccessful = Math.random() <= successChance;
