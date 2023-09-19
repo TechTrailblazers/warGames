@@ -9,6 +9,7 @@ let payload;
 let gameOver = false;
 let userHealth = 10000; // Initialize user's health to 10000
 let computerHealth = 10000;
+let successChance = 0.6;
 // function setNumberOfPlayers(players) {
 //   numberOfPlayers = players;
 //   console.log(`Number of players set to: ${numberOfPlayers}`);
@@ -211,7 +212,7 @@ async function startGameLogic(client, payload, username, enableChat) {
     }
   }
 }
-async function* chatMessagingGenerator(client, attackCity, defendCity) {
+async function startChatMessaging(client) {
   while (true) {
     const messageAnswers = await inquirer.prompt([
       {
@@ -223,35 +224,15 @@ async function* chatMessagingGenerator(client, attackCity, defendCity) {
 
     const message = messageAnswers.message;
     console.log(message);
-
     if (message.toLowerCase() === 'exit') {
-      // Send the message to the server or other players (optional)
-      client.emit(EventNames.chatMessage, message);
-      // console.log(`You sent a message: ${message}`);
-      break; // Exit the generator when 'exit' is entered
-    } else {
-      // Send the message to the server or other players
-      client.emit(EventNames.chatMessage, message);
-      // console.log(`You sent a message: ${message}`);
-      // Yield control to the caller (startChatMessaging) until the next message is ready
-      yield;
+      attackChanceLoop(client);
     }
+    // console.log(client);
+    // Send the message to the server or other players
+    client.emit(EventNames.chatMessage, message);
+    console.log(EventNames.chatMessage);
+    // console.log(`You sent a message: ${message}`);
   }
-}
-
-async function startChatMessaging(client, attackCity, defendCity) {
-  const chatGenerator = chatMessagingGenerator(client, attackCity, defendCity);
-
-  while (true) {
-    const { done } = await chatGenerator.next();
-    if (done) {
-      // The user entered 'exit,' you can handle it here if needed
-      break; // Exit the chat loop
-    }
-  }
-
-  // Resume your game logic or perform any necessary actions
-  attackChanceLoop(client, defendCity, attackCity);
 }
 
 // login();
@@ -294,18 +275,16 @@ async function attackChanceLoop(
   attackCity,
   userAttackPayload
 ) {
-  const successChance = 0.6;
-
-  while (userHealth > 0 && computerHealth > 0 && !gameOver) {
+  if (userHealth > 0 && computerHealth > 0 && !gameOver) {
     // Generate a random number between 0 and 1
-    console.log('Starting the loop', userHealth, computerHealth, gameOver);
+    console.log('First if statement', userHealth, computerHealth, gameOver);
     const randomValue = Math.random();
 
     const userAttackEvent = {
       damage: Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000,
       health: userHealth,
     };
-
+    let computerHasAttack = false;
     if (randomValue <= successChance) {
       // Attack is successful
       const userDamage = userAttackEvent.damage;
@@ -333,7 +312,10 @@ async function attackChanceLoop(
             ); // Update computer's health
           }
 
-          await performComputerAttack(client, computerAttackEvent);
+          computerHasAttack = await performComputerAttack(
+            client,
+            computerAttackEvent
+          );
         } catch (error) {
           console.log(
             'catching the error',
@@ -344,7 +326,7 @@ async function attackChanceLoop(
           if (error.message === 'Game over') {
             console.log('Game Over, user');
             gameOver = true;
-            break; // Exit the loop and the function
+            return; // Exit the loop and the function
           } else {
             // Handle other errors if needed
             console.error('An error occurred:', error);
@@ -369,30 +351,35 @@ async function attackChanceLoop(
           computerDamage
         ); // Update computer's health
       }
-
-      await performComputerAttack(client, computerAttackEvent);
+      computerHasAttack = await performComputerAttack(
+        client,
+        computerAttackEvent
+      );
     }
+    if (computerHasAttack) {
+      if (userHealth <= 0 || computerHealth <= 0) {
+        console.log('Game Over, computer');
+        gameOver = true;
+        return; // Exit the loop
+      }
 
-    if (userHealth <= 0 || computerHealth <= 0) {
-      console.log('Game Over, computer');
-      gameOver = true;
-      break; // Exit the loop
-    }
-
-    const sendAnotherAttackAnswers = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'sendAttack',
-        message: 'Do you want to send another attack?',
-        choices: ['Yes', 'No', 'Chat'],
-      },
-    ]);
-    if (sendAnotherAttackAnswers.sendAttack === 'Chat') {
-      startChatMessaging(client, attackCity, defendCity);
-    } else if (sendAnotherAttackAnswers.sendAttack === 'No') {
-      console.log('Goodbye');
-      gameOver = true; // Set game over state to true
-      break; // No need to throw an error here
+      const sendAnotherAttackAnswers = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'sendAttack',
+          message: 'Do you want to send another attack?',
+          choices: ['Yes', 'No', 'Chat'],
+        },
+      ]);
+      if (sendAnotherAttackAnswers.sendAttack === 'Chat') {
+        console.log('answer was chat');
+        startChatMessaging(client, attackCity, defendCity);
+        return;
+      } else if (sendAnotherAttackAnswers.sendAttack === 'No') {
+        console.log('Goodbye');
+        gameOver = true; // Set game over state to true
+        return; // No need to throw an error here
+      }
     }
   }
 
@@ -580,7 +567,8 @@ async function performComputerAttack(
   username,
   enableChat
 ) {
-  if (gameOver) return;
+  if (gameOver) return true;
+
   // Simulate the computer's attack logic here
   // You can generate the attack payload and send it to the user
   // console.log('Simulating computer attack:');
@@ -606,6 +594,7 @@ async function performComputerAttack(
     // Game over, prompt the user to play again
     await askToPlayAgain(username, enableChat);
   }
+  return true;
 }
 
 function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
@@ -691,5 +680,5 @@ function startPlayer1(client, username) {
 login();
 module.exports = {
   startPlayer1,
-  startChatMessaging,
+  // startChatMessaging,
 };
