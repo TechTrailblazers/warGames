@@ -11,7 +11,7 @@ let payload;
 let gameOver = false;
 let userHealth = 10000; // Initialize user's health to 10000
 let computerHealth = 10000;
-let successChance = 0.6;
+let successChance = math.random();
 // function setNumberOfPlayers(players) {
 //   numberOfPlayers = players;
 //   console.log(`Number of players set to: ${numberOfPlayers}`);
@@ -223,12 +223,12 @@ async function startChatMessaging() {
     const message = messageAnswers.message;
     console.log(message);
     if (message.toLowerCase() === 'exit') {
-      attackChanceLoop();
+      return attackChanceLoop();
     }
     // console.log(client);
     // Send the message to the server or other players
     client.emit(EventNames.chatMessage, message);
-    return attackChanceLoop();
+    return startChatMessaging();
     // console.log(EventNames.chatMessage);
     // console.log(`You sent a message: ${message}`);
   }
@@ -582,8 +582,7 @@ async function performComputerAttack(
   return true;
 }
 
-function generateComputerAttackEvent(computerHealth) {
-  const successChance = 0.4;
+function generateComputerAttackEvent() {
   const damage = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
 
   const isSuccessful = Math.random() <= successChance;
