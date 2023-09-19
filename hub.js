@@ -75,6 +75,7 @@ function startGame() {
 }
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
+
   connectedUsers.set(socket.id, socket);
 
   socket.on('chosenNumPlayers', (numPlayers) => {

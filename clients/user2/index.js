@@ -1,4 +1,4 @@
-const { login } = require('./handler.js');
+const { startPlayer2 } = require('./handler.js');
 const { io } = require('socket.io-client');
 const client = io('ws://localhost:3000');
 
@@ -35,5 +35,5 @@ const client = io('ws://localhost:3000');
 // });
 
 // Call your game-related functions here as needed
-login(client);
+startPlayer2(client);
 // attackStarting(socket);
