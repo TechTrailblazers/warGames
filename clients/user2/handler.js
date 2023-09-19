@@ -1,39 +1,41 @@
 const { chance, EventNames } = require('../../utilities');
-
 const inquirer = require('inquirer');
 const { io } = require('socket.io-client');
 
 const client = io('ws://localhost:3000');
 
-let numberOfPlayers = 1;
-let isWaitingForUserInput = true;
-let startGameAnswers;
+client.on(EventNames.delivered, (payload) => {
+  console.log('Delivered event received:', payload);
+});
 
-function setNumberOfPlayers(players) {
-  numberOfPlayers = players;
-  console.log(`Number of players set to: ${numberOfPlayers}`);
-}
+client.on(EventNames.attackFailed, (payload) => {
+  console.log('Attack failed event received:', payload);
+});
+
+client.on(EventNames.ready, () => {
+  console.log('Ready event received');
+});
 
 async function login() {
   console.log(`
-    ░██╗░░░░░░░██╗███████╗██╗░░░░░░█████╗░░█████╗░███╗░░░███╗███████╗  ████████╗░█████╗░  ░██╗░░░░░░░██╗░█████╗░██████╗░
-    ░██║░░██╗░░██║██╔════╝██║░░░░░██╔══██╗██╔══██╗████╗░████║██╔════╝  ╚══██╔══╝██╔══██╗  ░██║░░██╗░░██║██╔══██╗██╔══██╗
-    ░╚██╗████╗██╔╝█████╗░░██║░░░░░██║░░╚═╝██║░░██║██╔████╔██║█████╗░░  ░░░██║░░░██║░░██║  ░╚██╗████╗██╔╝███████║██████╔╝
-    ░░████╔═████║░██╔══╝░░██║░░░░░██║░░██╗██║░░██║██║╚██╔╝██║██╔══╝░░  ░░░██║░░░██║░░██║  ░░████╔═████║░██╔══██║██╔══██╗
-    ░░╚██╔╝░╚██╔╝░███████╗███████╗╚█████╔╝╚█████╔╝██║░╚═╝░██║███████╗  ░░░██║░░░╚█████╔╝  ░░╚██╔╝░╚██╔╝░██║░░██║██║░░██║
-    ░░░╚═╝░░░╚═╝░░╚══════╝╚══════╝░╚════╝░░╚════╝░╚═╝░░░░░╚═╝╚══════╝  ░░░╚═╝░░░░╚════╝░  ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝
 
-    ░██████╗░░█████╗░███╗░░░███╗███████╗░██████╗
-    ██╔════╝░██╔══██╗████╗░████║██╔════╝██╔════╝
-    ██║░░██╗░███████║██╔████╔██║█████╗░░╚█████╗░
-    ██║░░╚██╗██╔══██║██║╚██╔╝██║██╔══╝░░░╚═══██╗
-    ╚██████╔╝██║░░██║██║░╚═╝░██║███████╗██████╔╝
-    ░╚═════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚═════╝░
-        `);
+  ░██╗░░░░░░░██╗███████╗██╗░░░░░░█████╗░░█████╗░███╗░░░███╗███████╗  ████████╗░█████╗░  ░██╗░░░░░░░██╗░█████╗░██████╗░
+  ░██║░░██╗░░██║██╔════╝██║░░░░░██╔══██╗██╔══██╗████╗░████║██╔════╝  ╚══██╔══╝██╔══██╗  ░██║░░██╗░░██║██╔══██╗██╔══██╗
+  ░╚██╗████╗██╔╝█████╗░░██║░░░░░██║░░╚═╝██║░░██║██╔████╔██║█████╗░░  ░░░██║░░░██║░░██║  ░╚██╗████╗██╔╝███████║██████╔╝
+  ░░████╔═████║░██╔══╝░░██║░░░░░██║░░██╗██║░░██║██║╚██╔╝██║██╔══╝░░  ░░░██║░░░██║░░██║  ░░████╔═████║░██╔══██║██╔══██╗
+  ░░╚██╔╝░╚██╔╝░███████╗███████╗╚█████╔╝╚█████╔╝██║░╚═╝░██║███████╗  ░░░██║░░░╚█████╔╝  ░░╚██╔╝░╚██╔╝░██║░░██║██║░░██║
+  ░░░╚═╝░░░╚═╝░░╚══════╝╚══════╝░╚════╝░░╚════╝░╚═╝░░░░░╚═╝╚══════╝  ░░░╚═╝░░░░╚════╝░  ░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝
 
-  // Prompt for game start and chat messaging
+  ░██████╗░░█████╗░███╗░░░███╗███████╗░██████╗
+  ██╔════╝░██╔══██╗████╗░████║██╔════╝██╔════╝
+  ██║░░██╗░███████║██╔████╔██║█████╗░░╚█████╗░
+  ██║░░╚██╗██╔══██║██║╚██╔╝██║██╔══╝░░░╚═══██╗
+  ╚██████╔╝██║░░██║██║░╚═╝░██║███████╗██████╔╝
+  ░╚═════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚═════╝░
+
+      `);
+
   try {
-    // Ask if the user wants to start the game and enable chat messaging
     const startGameAnswers = await inquirer.prompt([
       {
         type: 'list',
@@ -48,9 +50,7 @@ async function login() {
         default: false,
       },
     ]);
-
     if (startGameAnswers.startGame === 'Yes') {
-      // Ask how many players the user wants to play with
       const numPlayersAnswers = await inquirer.prompt([
         {
           type: 'list',
@@ -59,7 +59,6 @@ async function login() {
           choices: ['1', '2'],
         },
       ]);
-
       const numPlayers = parseInt(numPlayersAnswers.numPlayers);
 
       if (numPlayers === 1) {
@@ -68,7 +67,6 @@ async function login() {
         console.log('You selected 2 player game.');
       }
 
-      // Continue with login logic
       const loginAnswers = await inquirer.prompt([
         {
           type: 'input',
@@ -87,51 +85,15 @@ async function login() {
       const password = loginAnswers.password;
 
       console.log(`Logged in as ${username}`);
+      client.emit(EventNames.ready, { username });
 
       startPlayer2(client, username);
-      // Check if chat messaging is enabled and start chat messaging
+
       if (startGameAnswers.enableChat) {
-        // Start the chat messaging system
         startChatMessaging(client);
       }
 
-      const player1Attack = simulatePlayer1Attack();
-
-      // Handle Player 1's attack and generate a response
-      const response = handlePlayer1Attack(player1Attack);
-
-      // Log the response
-      console.log(`Player 1's attack response: ${response}`);
-
-      // Continue with the rest of the code, including attack logic
-      const attackAnswers = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'choices',
-          message: 'Do you want to attack?',
-          choices: ['Yes', 'No'],
-        },
-      ]);
-
-      if (attackAnswers.choices === 'Yes') {
-        const attackCoordinatesAnswers = await inquirer.prompt([
-          {
-            type: 'list',
-            name: 'coordinates',
-            message: 'Select your attacking coordinates:',
-            choices: ['Coordinates 1', 'Coordinates 2', 'Coordinates 3'],
-          },
-        ]);
-
-        const attackCoordinates = attackCoordinatesAnswers.coordinates;
-        console.log('Attacking on coordinates: ' + attackCoordinates);
-        // Further processing related to coordinates
-      } else {
-        console.log('Goodbye');
-      }
-    } else {
-      console.log('Goodbye');
-      throw new Error('Game ended');
+      await startGameLogic(client, username, startGameAnswers.enableChat);
     }
   } catch (error) {
     if (error.message !== 'Game ended') {
@@ -140,17 +102,82 @@ async function login() {
   }
 }
 
-function simulatePlayer1Attack() {
-  // Generate a simulated attack or fetch it from a real source
-  return 'Simulated Attack Data'; // Replace with actual data
-}
+async function startGameLogic(client, username, enableChat) {
+  try {
+    const attackAnswers = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'choices',
+        message: 'Do you want to attack?',
+        choices: ['Yes', 'No'],
+      },
+    ]);
 
-// Handle Player 1's attack and generate a response (replace with your logic)
-function handlePlayer1Attack(player1Attack) {
-  // Process the attack and generate a response
-  // Replace with your logic to handle the attack
-  const response = 'Attack Response'; // Replace with actual response
-  return response;
+    if (attackAnswers.choices === 'Yes') {
+      const attackCoordinatesAnswers = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'country',
+          message: 'Select your attacking country:',
+          choices: [
+            `${chance.country({ full: true })}`,
+            `${chance.country({ full: true })}`,
+            `${chance.country({ full: true })}`,
+          ],
+        },
+        {
+          type: 'list',
+          name: 'coordinates',
+          message: 'Select your country to attack!:',
+          choices: [
+            `${chance.country({ full: true })}`,
+            `${chance.country({ full: true })}`,
+            `${chance.country({ full: true })}`,
+          ],
+        },
+        {
+          type: 'list',
+          name: 'type of attack',
+          message: 'Select your method of attack!:',
+          choices: ['Air', 'Land', 'Sea'],
+        },
+      ]);
+      const defendCity = attackCoordinatesAnswers.country;
+      const attackCity = attackCoordinatesAnswers.coordinates;
+      console.log('Attacking : ' + attackCity);
+
+      const userDefendCity = defendCity;
+      const userAttackCity = attackCity;
+
+      const userAttackPayload = {
+        event: 'gameStart',
+        attackSent: 0,
+        clientId: userDefendCity,
+        countryId: userAttackCity,
+        order: {},
+        damage: 0,
+        health: 0,
+      };
+      await attackChanceLoop(
+        client,
+        userDefendCity,
+        userAttackCity,
+        userAttackPayload
+      );
+
+      const computerAttackPayload = generateComputerAttackEvent(
+        userDefendCity,
+        userAttackCity
+      );
+      await performComputerAttack(client, computerAttackPayload);
+    } else {
+      console.log('Goodbye');
+    }
+  } catch (error) {
+    if (error.message !== 'Game ended') {
+      console.error('An error occurred:', error);
+    }
+  }
 }
 
 async function startChatMessaging(client) {
@@ -162,64 +189,176 @@ async function startChatMessaging(client) {
         message: 'Enter your message (or type "exit" to quit chat):',
       },
     ]);
-
     const message = messageAnswers.message;
 
     if (message.toLowerCase() === 'exit') {
-      // Exit the chat messaging system
       break;
     }
 
-    // Send the message to the server or other players
     client.emit(EventNames.chatMessage, message);
 
     console.log(`You sent a message: ${message}`);
   }
 }
 
+login();
+
+function calculateUserHealth(currentHealth, damage) {
+  const newHealth = Math.max(currentHealth - damage, 0);
+  return newHealth;
+}
+
+function calculateComputerHealth(currentHealth, damage) {
+  const newHealth = Math.max(currentHealth - damage, 0);
+  return newHealth;
+}
+
+async function attackChanceLoop(
+  client,
+  defendCity,
+  attackCity,
+  userAttackPayload
+) {
+  const successChance = 0.6;
+
+  let userHealth = 10000;
+  let computerHealth = 10000;
+
+  while (userHealth > 0 && computerHealth > 0) {
+    const randomValue = Math.random();
+
+    const userAttackEvent = {
+      damage: Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000,
+      health: userHealth,
+    };
+
+    if (randomValue <= successChance) {
+      const userDamage = userAttackEvent.damage;
+      userHealth = calculateUserHealth(userHealth, userDamage);
+      console.log(
+        `${defendCity} has successfully hit ${attackCity} - Damage: ${userDamage} - Health Remaining: ${userHealth}`
+      );
+
+      const computerAttackEvent = generateComputerAttackEvent(
+        defendCity,
+        attackCity,
+        computerHealth
+      );
+
+      if (computerAttackEvent.success) {
+        const computerDamage = computerAttackEvent.damage;
+        computerHealth = calculateComputerHealth(
+          computerHealth,
+          computerDamage
+        );
+      }
+
+      await performComputerAttack(client, computerAttackEvent);
+
+      if (userHealth <= 0 || computerHealth <= 0) {
+        console.log('Game Over');
+        askToPlayAgain();
+        return;
+      }
+    } else {
+      console.log(`${defendCity}'s attack has missed ${attackCity}`);
+
+      const computerAttackEvent = generateComputerAttackEvent(
+        defendCity,
+        attackCity,
+        computerHealth
+      );
+
+      if (computerAttackEvent.success) {
+        const computerDamage = computerAttackEvent.damage;
+        computerHealth = calculateComputerHealth(
+          computerHealth,
+          computerDamage
+        );
+      }
+
+      await performComputerAttack(client, computerAttackEvent);
+    }
+
+    const sendAnotherAttackAnswers = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'sendAttack',
+        message: 'Do you want to send another attack?',
+        choices: ['Yes', 'No'],
+      },
+    ]);
+
+    if (sendAnotherAttackAnswers.sendAttack === 'No') {
+      console.log('Goodbye');
+      throw new Error('Game ended');
+    }
+  }
+}
+
+async function performComputerAttack(client, computerAttackPayload) {}
+
+function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
+  const successChance = 0.7;
+  const damage = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
+
+  const isSuccessful = Math.random() <= successChance;
+
+  const newHealth = calculateComputerHealth(currentHealth, damage);
+
+  if (isSuccessful) {
+    console.log(
+      `${attackCity} (Computer) has successfully hit ${defendCity} - Damage: ${damage} - Health Remaining: ${newHealth}`
+    );
+
+    if (newHealth <= 0) {
+      console.log(`${defendCity} is defeated!`);
+    }
+  } else {
+    console.log(`${attackCity} (Computer)'s attack has missed ${defendCity}`);
+  }
+
+  return {
+    success: isSuccessful,
+    damage: damage,
+    health: newHealth,
+  };
+}
+
+async function askToPlayAgain(username, enableChat) {
+  let playAgainAnswers = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'playAgain',
+      message: 'Do you want to play again?',
+      choices: ['Yes', 'No'],
+    },
+  ]);
+
+  if (playAgainAnswers.playAgain === 'Yes') {
+    await startGameLogic(username, enableChat);
+  } else {
+    await disconnect(client);
+  }
+}
+
+function disconnect(client) {
+  client.disconnect();
+}
+
 function startPlayer2(client, username) {
-  console.log(`${username} has entered the game.`);
   client.emit(EventNames.ready);
-
-  // Add event listeners for game events, attacks, etc.
-  client.on(EventNames.gameStart, (payload) => {
-    console.log(`Received attack from Player ${payload.player}`);
-    // Handle the attack and respond accordingly
-    handleReceivedAttack(payload, client);
-  });
-
   client.on(EventNames.chatMessage, (message) => {
     console.log(`Received message: ${message}`);
-    // You can display the received message in your chat interface
   });
-
-  // Add more event listeners as needed
-
-  // Continue with Player 2's game logic here
+  client.on(EventNames.readyToPlay, () => {
+    isWaitingForUserInput = false;
+  });
 }
 
-function handleReceivedAttack(payload, client) {
-  // Handle the received attack here, calculate damage, etc.
-  // Respond with attack results to Player 1 or the game logic
-
-  // For example, you can simulate Player 2's response
-  const responsePayload = {
-    player: 2, // Player 2's response
-    success: true, // Indicate whether the attack was successful
-    health: 8000, // Adjust the health as needed
-    damage: 2000, // Adjust the damage as needed
-    countryId: payload.clientId, // Respond to the same player
-  };
-
-  console.log(`Player ${responsePayload.player} is responding to the attack.`);
-
-  // Emit the response back to Player 1 or the game logic
-  client.emit(EventNames.attackResponse, responsePayload);
-}
-
-// Call the login function to start Player 2's login and game setup
+startPlayer2(client);
 
 module.exports = {
-  login,
+  startPlayer2,
   startChatMessaging,
 };
