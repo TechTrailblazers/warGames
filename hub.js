@@ -77,6 +77,11 @@ function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
   connectedUsers.set(socket.id, socket);
 
+  socket.on(EventNames.chatMessage, (message) => {
+    console.log('sending the message', message);
+    // Broadcast the message to all connected clients
+    io.emit(EventNames.chatMessage, message);
+  });
   socket.on('chosenNumPlayers', (numPlayers) => {
     if (numPlayers === 1 || numPlayers === 2) {
       // Handle the chosen number of players here as needed
@@ -90,10 +95,6 @@ function handleConnection(socket) {
       socket.emit('numPlayersChosen', numPlayers);
 
       // Continue with your event handling logic
-      socket.on(EventNames.chatMessage, (message) => {
-        // Broadcast the message to all connected clients
-        io.emit(EventNames.chatMessage, message);
-      });
 
       socket.on(EventNames.gameStart, handleGameStart);
 
