@@ -78,7 +78,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## License
 
-[MIT License](LICENSE) © Johnathan Brooks, Julio Ramirez, and Michael Pace
+[MIT License](LICENSE) © Johnathan Brooks and Julio Ramirez
 
 #### Resources
 
