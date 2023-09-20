@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const { chance, EventNames, Queue } = require('./utilities.js');
+const { default: events } = require('inquirer/lib/utils/events.js');
 // const { v4: uuidv4 } = require('uuid');
 
 // const handleConnection = require('./connections.js');
@@ -14,8 +15,10 @@ let consoleLogShown = false;
 let userConsoleLog = false;
 let connectedUsersCount = 0;
 
-function handleGameStart(payload, client) {
+function handleGameStart(socket) {
+  console.log('In the gameStart Function');
   if (!consoleLogShown) {
+    socket.emit('gameStart');
     console.log('The user has requested to start the game');
     consoleLogShown = true;
   }
@@ -83,6 +86,9 @@ function handleConnection(socket) {
     // Broadcast the message to all connected clients
     io.emit(EventNames.chatMessage, message);
   });
+
+  socket.on('gameStart', () => handleGameStart(socket));
+
   socket.on('chosenNumPlayers', (numPlayers) => {
     if (numPlayers === 1 || numPlayers === 2) {
       // Handle the chosen number of players here as needed
@@ -97,10 +103,10 @@ function handleConnection(socket) {
 
       // Continue with your event handling logic
 
-      socket.on(EventNames.gameStart, handleGameStart);
+      // socket.on(EventNames.gameStart, () => handleGameStart(socket));
 
-      socket.on(EventNames.ready, () => {
-        handleUserReady(socket);
+      socket.on(EventNames.confirmedAttack, (payload) => {
+        handleConfirmedAttack(payload, socket);
       });
 
       socket.on(EventNames.received, (payload) => handleKnown(payload, socket));
