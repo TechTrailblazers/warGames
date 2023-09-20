@@ -12,6 +12,31 @@ client.on(EventNames.ready, () => {
   console.log('Ready event received');
 });
 
+let attackCity;
+let defendCity;
+let username;
+let password;
+let payload;
+let gameOver = false;
+let userHealth = 10000; // Initialize user's health to 10000
+let computerHealth = 10000;
+let successChance = Math.random();
+
+client.on(EventNames.delivered, (payload) => {
+  console.log('Delivered event received:', payload);
+  // Handle the 'delivered' event
+});
+
+client.on(EventNames.attackFailed, (payload) => {
+  console.log('Attack failed event received:', payload);
+  // Handle the 'attackFailed' event
+});
+
+client.on(EventNames.ready, () => {
+  console.log('Ready event received');
+  // Handle the 'ready' event
+});
+
 async function login() {
   console.log(`
 
@@ -39,12 +64,12 @@ async function login() {
         message: 'Do you want to start the game?',
         choices: ['Yes', 'No'],
       },
-      {
-        type: 'confirm',
-        name: 'enableChat',
-        message: 'Do you want to enable chat messaging?',
-        default: false,
-      },
+      // {
+      //   type: 'confirm',
+      //   name: 'enableChat',
+      //   message: 'Do you want to enable chat messaging?',
+      //   default: false,
+      // },
     ]);
     if (startGameAnswers.startGame === 'Yes') {
       const numPlayersAnswers = await inquirer.prompt([
@@ -87,19 +112,19 @@ async function login() {
         },
       ]);
 
-      const username = loginAnswers.username;
-      const password = loginAnswers.password;
+      username = loginAnswers.username;
+      password = loginAnswers.password;
 
       console.log(`Logged in as ${username}`);
       client.emit(EventNames.ready, { username });
 
       startPlayer2(client, username);
 
-      if (startGameAnswers.enableChat) {
-        startChatMessaging(client);
-      }
+      // if (startGameAnswers.enableChat) {
+      //   startChatMessaging(client);
+      // }
 
-      await startGameLogic(client, username, startGameAnswers.enableChat);
+      // await startGameLogic(client, username, startGameAnswers.enableChat);
     }
   } catch (error) {
     if (error.message !== 'Game ended') {
@@ -115,7 +140,7 @@ async function startGameLogic(client, username, enableChat) {
         type: 'list',
         name: 'choices',
         message: 'Do you want to attack?',
-        choices: ['Yes', 'No'],
+        choices: ['Yes', 'No', 'Chat'],
       },
     ]);
 
@@ -148,34 +173,30 @@ async function startGameLogic(client, username, enableChat) {
           choices: ['Air', 'Land', 'Sea'],
         },
       ]);
-      const defendCity = attackCoordinatesAnswers.country;
-      const attackCity = attackCoordinatesAnswers.coordinates;
+      defendCity = attackCoordinatesAnswers.country;
+      attackCity = attackCoordinatesAnswers.coordinates;
       console.log('Attacking : ' + attackCity);
 
-      const userDefendCity = defendCity;
-      const userAttackCity = attackCity;
+      // const userDefendCity = defendCity;
+      // const userAttackCity = attackCity;
 
       const userAttackPayload = {
         event: 'gameStart',
         attackSent: 0,
-        clientId: userDefendCity,
-        countryId: userAttackCity,
+        clientId: defendCity,
+        countryId: attackCity,
         order: {},
         damage: 0,
         health: 0,
       };
-      await attackChanceLoop(
-        client,
-        userDefendCity,
-        userAttackCity,
-        userAttackPayload
-      );
+      attackChanceLoop(client, defendCity, attackCity, userAttackPayload);
 
-      const computerAttackPayload = generateComputerAttackEvent(
-        userDefendCity,
-        userAttackCity
-      );
-      await performComputerAttack(client, computerAttackPayload);
+      // const computerAttackPayload = generateComputerAttackEvent(
+      //   userDefendCity,
+      //   userAttackCity
+      // );
+    } else if (attackAnswers.choices === 'Chat') {
+      startChatMessaging();
     } else {
       console.log('Goodbye');
     }
@@ -187,7 +208,7 @@ async function startGameLogic(client, username, enableChat) {
 }
 
 async function startChatMessaging(client) {
-  while (true) {
+  while (client) {
     const messageAnswers = await inquirer.prompt([
       {
         type: 'input',
@@ -198,121 +219,149 @@ async function startChatMessaging(client) {
     const message = messageAnswers.message;
 
     if (message.toLowerCase() === 'exit') {
-      break;
+      return attackChanceLoop();
     }
 
-    client.emit(EventNames.chatMessage, message);
-
-    console.log(`You sent a message: ${message}`);
+    client.emit(EventNames.chatMessage, { message, sender: 'user2' });
+    return startChatMessaging();
   }
 }
 
-login();
-
-function calculateUserHealth(currentHealth, damage) {
-  const newHealth = Math.max(currentHealth - damage, 0);
+function calculateUserHealth(damage) {
+  const newHealth = Math.max(userHealth - damage, 0);
   return newHealth;
 }
 
-function calculateComputerHealth(currentHealth, damage) {
-  const newHealth = Math.max(currentHealth - damage, 0);
+function calculateComputerHealth(damage) {
+  const newHealth = Math.max(computerHealth - damage, 0);
   return newHealth;
 }
 
-async function attackChanceLoop(
-  client,
-  defendCity,
-  attackCity,
-  userAttackPayload
-) {
-  const successChance = 0.6;
-
-  let userHealth = 10000;
-  let computerHealth = 10000;
-
-  while (userHealth > 0 && computerHealth > 0) {
+async function attackChanceLoop(client, userAttackPayload) {
+  if (userHealth > 0 && computerHealth > 0 && !gameOver) {
     const randomValue = Math.random();
 
     const userAttackEvent = {
       damage: Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000,
       health: userHealth,
     };
-
+    let computerHasAttack = false;
     if (randomValue <= successChance) {
       const userDamage = userAttackEvent.damage;
-      userHealth = calculateUserHealth(userHealth, userDamage);
+      userHealth = calculateUserHealth(userDamage);
       console.log(
         `${defendCity} has successfully hit ${attackCity} - Damage: ${userDamage} - Health Remaining: ${userHealth}`
       );
 
-      const computerAttackEvent = generateComputerAttackEvent(
-        defendCity,
-        attackCity,
-        computerHealth
-      );
+      if (!gameOver) {
+        try {
+          const computerAttackEvent =
+            generateComputerAttackEvent(computerHealth);
 
-      if (computerAttackEvent.success) {
-        const computerDamage = computerAttackEvent.damage;
-        computerHealth = calculateComputerHealth(
-          computerHealth,
-          computerDamage
-        );
-      }
+          if (computerAttackEvent.success) {
+            // Only update computer's health if the attack is successful
+            const computerDamage = computerAttackEvent.damage;
+            computerHealth = calculateComputerHealth(computerDamage); // Update computer's health
+          }
 
-      await performComputerAttack(client, computerAttackEvent);
-
-      if (userHealth <= 0 || computerHealth <= 0) {
-        console.log('Game Over');
-        askToPlayAgain();
-        return;
+          computerHasAttack = await performComputerAttack(
+            client,
+            computerAttackEvent
+          );
+        } catch (error) {
+          console.log(
+            'catching the error',
+            userHealth,
+            computerHealth,
+            gameOver
+          );
+          if (error.message === 'Game over') {
+            gameOver = true;
+            return; // Exit the loop and the function
+          } else {
+            // Handle other errors if needed
+            console.error('An error occurred:', error);
+          }
+        }
       }
     } else {
       console.log(`${defendCity}'s attack has missed ${attackCity}`);
-      client.on(EventNames.attackFailed, (payload) => {
-        console.log('Attack failed event received:', payload);
-      });
-      const computerAttackEvent = generateComputerAttackEvent(
-        defendCity,
-        attackCity,
-        computerHealth
-      );
+
+      // Simulate the computer's attack after the user's attack
+      const computerAttackEvent = generateComputerAttackEvent();
 
       if (computerAttackEvent.success) {
+        // Only update computer's health if the attack is successful
         const computerDamage = computerAttackEvent.damage;
-        computerHealth = calculateComputerHealth(
-          computerHealth,
-          computerDamage
-        );
+        computerHealth = calculateComputerHealth(computerDamage); // Update computer's health
+      }
+      computerHasAttack = await performComputerAttack(
+        client,
+        computerAttackEvent
+      );
+    }
+    if (computerHasAttack) {
+      if (userHealth <= 0 || computerHealth <= 0) {
+        if (userHealth <= 0) {
+          console.log(`${attackCity} is defeated!`);
+        }
+        console.log('Game Over');
+
+        gameOver = true;
+        await askToPlayAgain();
+        return; // Exit the loop
       }
 
-      await performComputerAttack(client, computerAttackEvent);
+      const sendAnotherAttackAnswers = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'sendAttack',
+          message: 'Do you want to send another attack?',
+          choices: ['Yes', 'No', 'Chat'],
+        },
+      ]);
+      if (sendAnotherAttackAnswers.sendAttack === 'Yes') {
+        attackChanceLoop();
+      }
+      if (sendAnotherAttackAnswers.sendAttack === 'Chat') {
+        console.log('answer was chat');
+        startChatMessaging();
+        return;
+      } else if (sendAnotherAttackAnswers.sendAttack === 'No') {
+        console.log('Goodbye');
+        gameOver = true; // Set game over state to true
+        return; // No need to throw an error here
+      }
     }
+  }
 
-    const sendAnotherAttackAnswers = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'sendAttack',
-        message: 'Do you want to send another attack?',
-        choices: ['Yes', 'No'],
-      },
-    ]);
-
-    if (sendAnotherAttackAnswers.sendAttack === 'No') {
-      console.log('Goodbye');
-      throw new Error('Game ended');
-    }
+  // Check for game over and prompt to play again
+  if (gameOver) {
+    await askToPlayAgain();
   }
 }
 
-async function performComputerAttack(client, computerAttackPayload) {}
+async function performComputerAttack(
+  client,
+  computerHealth,
+  username,
+  enableChat
+) {
+  if (gameOver) return true;
+  // Check if the game is over
+  if (computerHealth <= 0) {
+    // Game over, prompt the user to play again
+    await askToPlayAgain(username, enableChat);
+  }
+  return true;
+}
 
-function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
-  const successChance = 0.7;
+function generateComputerAttackEvent() {
   const damage = Math.floor(Math.random() * (2500 - 1000 + 1)) + 1000;
 
   const isSuccessful = Math.random() <= successChance;
 
-  const newHealth = calculateComputerHealth(currentHealth, damage);
+  const newHealth = calculateComputerHealth(damage);
 
   if (isSuccessful) {
     console.log(
@@ -323,6 +372,10 @@ function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
       console.log(`${defendCity} is defeated!`);
     }
   } else {
+    if (gameOver) {
+      console.log('Game Over!');
+      return;
+    }
     console.log(`${attackCity} (Computer)'s attack has missed ${defendCity}`);
   }
 
@@ -333,7 +386,7 @@ function generateComputerAttackEvent(defendCity, attackCity, currentHealth) {
   };
 }
 
-async function askToPlayAgain(username, enableChat) {
+async function askToPlayAgain() {
   let playAgainAnswers = await inquirer.prompt([
     {
       type: 'list',
@@ -342,20 +395,29 @@ async function askToPlayAgain(username, enableChat) {
       choices: ['Yes', 'No'],
     },
   ]);
-
+  attackCity = '';
+  defendCity = '';
+  gameOver = false;
+  userHealth = 10000; // Initialize user's health to 10000
+  computerHealth = 10000;
+  successChance = Math.random();
   if (playAgainAnswers.playAgain === 'Yes') {
-    await startGameLogic(username, enableChat);
+    // Start the game again
+
+    startGameLogic();
   } else {
-    await disconnect(client);
+    // Disconnect the user or perform any other actions
+    await disconnect();
   }
 }
-
-function disconnect(client) {
+function disconnect() {
+  // Disconnect the user
+  console.log('Thanks for playing!');
   client.disconnect();
 }
 
 function startPlayer2(client, username) {
-  client.emit(EventNames.ready);
+  client.emit(EventNames.ready, 'user2');
 
   client.on(EventNames.chatMessage, (message) => {
     console.log(`Received message: ${message}`);

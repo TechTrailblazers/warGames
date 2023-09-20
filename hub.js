@@ -9,7 +9,7 @@ const io = new Server();
 
 io.listen(3000);
 
-const connectedUsers = new Map();
+const connectedUsers = {};
 
 let consoleLogShown = false;
 let userConsoleLog = false;
@@ -36,7 +36,7 @@ function handleConfirmedAttack(payload, socket) {
   }
 }
 
-function handleUserReady(socket) {
+function handleUserReady(user, socket) {
   if (!userConsoleLog) {
     console.log('User is ready to start');
     userConsoleLog = true;
@@ -54,7 +54,7 @@ function handleKnown(payload, socket) {
 
 function startGame() {
   console.log('Both users are connected and ready. Starting the game...');
-  const userSockets = Array.from(connectedUsers.values());
+  const userSockets = Object.values(connectedUsers);
   // const player1Id = uuidv4(); // Generate a unique ID for Player 1
   // const player2Id = uuidv4();
 
@@ -76,19 +76,32 @@ function startGame() {
     socket.emit(EventNames.gameStart);
   });
 }
+
+function handleChatMessage(payload) {
+  console.log(connectedUsers);
+  const { message, sender } = payload;
+  if (sender === 'user1') {
+    connectedUsers.user2.emit(EventNames.chatMessage, message);
+  } else {
+    connectedUsers.user1.emit(EventNames.chatMessage, message);
+  }
+}
+
 function handleConnection(socket) {
   console.log('we have a new connection: ', socket.id);
 
-  connectedUsers.set(socket.id, socket);
+  // connectedUsers.set(socket.id, socket);
 
-  socket.on(EventNames.chatMessage, (message) => {
-    console.log('sending the message', message);
-    // Broadcast the message to all connected clients
-    io.emit(EventNames.chatMessage, message);
+  socket.on(EventNames.chatMessage, (payload) => {
+    handleChatMessage(payload);
   });
 
   socket.on('gameStart', () => handleGameStart(socket));
 
+  socket.on('ready', (user) => {
+    connectedUsers[user] = socket;
+  });
+  // socket.on(EventNames.gameStart, () => handleGameStart(socket));
   socket.on('chosenNumPlayers', (numPlayers) => {
     if (numPlayers === 1 || numPlayers === 2) {
       // Handle the chosen number of players here as needed
@@ -103,8 +116,6 @@ function handleConnection(socket) {
 
       // Continue with your event handling logic
 
-      // socket.on(EventNames.gameStart, () => handleGameStart(socket));
-
       socket.on(EventNames.confirmedAttack, (payload) => {
         handleConfirmedAttack(payload, socket);
       });
@@ -114,7 +125,7 @@ function handleConnection(socket) {
       socket.on('disconnect', () => {
         console.log('User disconnected: ', socket.id);
         connectedUsersCount--;
-        connectedUsers.delete(socket.id);
+        // delete TODO!!
       });
     } else {
       // Invalid input, you can handle this case accordingly

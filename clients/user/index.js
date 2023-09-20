@@ -3,6 +3,7 @@ const inquirer = require('inquirer');
 const { io } = require('socket.io-client');
 
 const client = io('ws://localhost:3000');
+
 let attackCity;
 let defendCity;
 let username;
@@ -85,8 +86,10 @@ async function login() {
 
       if (numPlayers === 1) {
         console.log('You selected 1 player game.');
+        client.emit('gameStart');
       } else {
         console.log('You selected 2 player game.');
+        client.emit('gameStart');
       }
 
       // Continue with login logic
@@ -109,8 +112,10 @@ async function login() {
       password = loginAnswers.password;
 
       console.log(`Logged in as ${username}`);
+      client.emit(EventNames.ready, { username });
       // startUser(client);
-      startPlayer1();
+
+      startPlayer1(client, username);
       // Check if chat messaging is enabled and start chat messaging
       // if (startGameAnswers.enableChat) {
       // Start the chat messaging system
@@ -126,7 +131,7 @@ async function login() {
   }
 }
 
-async function startGameLogic() {
+async function startGameLogic(client, username, enableChat) {
   try {
     const attackAnswers = await inquirer.prompt([
       {
@@ -210,7 +215,7 @@ async function startGameLogic() {
     }
   }
 }
-async function startChatMessaging() {
+async function startChatMessaging(client) {
   while (client) {
     const messageAnswers = await inquirer.prompt([
       {
@@ -221,13 +226,13 @@ async function startChatMessaging() {
     ]);
 
     const message = messageAnswers.message;
-    console.log(message);
+
     if (message.toLowerCase() === 'exit') {
       return attackChanceLoop();
     }
     // console.log(client);
     // Send the message to the server or other players
-    client.emit(EventNames.chatMessage, message);
+    client.emit(EventNames.chatMessage, { message, sender: 'user1' });
     return startChatMessaging();
     // console.log(EventNames.chatMessage);
     // console.log(`You sent a message: ${message}`);
@@ -256,7 +261,6 @@ async function attackChanceLoop(client, userAttackPayload) {
     };
     let computerHasAttack = false;
     if (randomValue <= successChance) {
-      // Attack is successful
       const userDamage = userAttackEvent.damage;
       userHealth = calculateUserHealth(userDamage); // Update user's health
       console.log(
@@ -429,17 +433,21 @@ function disconnect() {
   client.disconnect();
 }
 
-function startPlayer1() {
+function startPlayer1(client, username) {
   // console.log(`${username} has entered the game.`);
-  client.emit(EventNames.ready);
+  client.emit(EventNames.ready, 'user1');
 
   client.on(EventNames.chatMessage, (message) => {
     console.log(`Received message: ${message}`);
     // You can display the received message in your chat interface
   });
-  client.on(EventNames.readyToPlay, () => {});
+  client.on(EventNames.readyToPlay, () => {
+    isWaitingForUserInput = false;
+  });
+  client.on(EventNames.gameStart, () => console.log('Game has started 365'));
 }
 login();
+startPlayer1(client);
 module.exports = {
   startPlayer1,
   // startChatMessaging,
