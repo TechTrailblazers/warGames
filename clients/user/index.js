@@ -215,7 +215,7 @@ async function startGameLogic(client, username, enableChat) {
     }
   }
 }
-async function startChatMessaging(client) {
+async function startChatMessaging() {
   while (client) {
     const messageAnswers = await inquirer.prompt([
       {

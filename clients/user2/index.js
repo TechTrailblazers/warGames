@@ -4,14 +4,6 @@ const { io } = require('socket.io-client');
 
 const client = io('ws://localhost:3000');
 
-client.on(EventNames.delivered, (payload) => {
-  console.log('Delivered event received:', payload);
-});
-
-client.on(EventNames.ready, () => {
-  console.log('Ready event received');
-});
-
 let attackCity;
 let defendCity;
 let username;
@@ -125,6 +117,7 @@ async function login() {
       // }
 
       // await startGameLogic(client, username, startGameAnswers.enableChat);
+      startGameLogic();
     }
   } catch (error) {
     if (error.message !== 'Game ended') {
@@ -207,7 +200,7 @@ async function startGameLogic(client, username, enableChat) {
   }
 }
 
-async function startChatMessaging(client) {
+async function startChatMessaging() {
   while (client) {
     const messageAnswers = await inquirer.prompt([
       {
@@ -427,7 +420,7 @@ function startPlayer2(client, username) {
   });
   client.on(EventNames.gameStart, () => console.log('Game has started 365'));
 }
-
+login();
 startPlayer2(client);
 
 module.exports = {

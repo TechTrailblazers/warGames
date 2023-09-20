@@ -101,7 +101,11 @@ function handleConnection(socket) {
   socket.on('ready', (user) => {
     connectedUsers[user] = socket;
   });
+  socket.on(EventNames.confirmedAttack, (payload) => {
+    handleConfirmedAttack(payload, socket);
+  });
   // socket.on(EventNames.gameStart, () => handleGameStart(socket));
+
   socket.on('chosenNumPlayers', (numPlayers) => {
     if (numPlayers === 1 || numPlayers === 2) {
       // Handle the chosen number of players here as needed
@@ -110,15 +114,10 @@ function handleConnection(socket) {
         numPlayers,
         // Other player-specific data
       };
-
       // Emit a custom event to inform the client about the chosen number of players
       socket.emit('numPlayersChosen', numPlayers);
 
       // Continue with your event handling logic
-
-      socket.on(EventNames.confirmedAttack, (payload) => {
-        handleConfirmedAttack(payload, socket);
-      });
 
       socket.on(EventNames.received, (payload) => handleKnown(payload, socket));
 
