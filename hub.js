@@ -78,11 +78,13 @@ function startGame() {
 }
 
 function handleChatMessage(payload) {
-  console.log(connectedUsers);
+  // console.log(connectedUsers);
   const { message, sender } = payload;
   if (sender === 'user1') {
+    console.log('emit to user2', message);
     connectedUsers.user2.emit(EventNames.chatMessage, message);
   } else {
+    console.log('emit to user1', message);
     connectedUsers.user1.emit(EventNames.chatMessage, message);
   }
 }
