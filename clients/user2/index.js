@@ -132,7 +132,7 @@ async function startGameLogic(client, username, enableChat) {
         type: 'list',
         name: 'choices',
         message: 'Do you want to attack?',
-        choices: ['Yes', 'No', 'Chat'],
+        choices: ['Yes', 'No'],
       },
     ]);
 
@@ -187,8 +187,6 @@ async function startGameLogic(client, username, enableChat) {
       //   userDefendCity,
       //   userAttackCity
       // );
-    } else if (attackAnswers.choices === 'Chat') {
-      startChatMessaging();
     } else {
       console.log('Goodbye');
     }
