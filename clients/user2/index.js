@@ -409,7 +409,7 @@ function disconnect() {
   client.disconnect();
 }
 
-function startPlayer2(client, username) {
+function startPlayer2() {
   client.emit(EventNames.ready, 'user2');
 
   client.on(EventNames.chatMessage, (message) => {
