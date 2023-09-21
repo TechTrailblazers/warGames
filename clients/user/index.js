@@ -138,7 +138,7 @@ async function startGameLogic(client, username, enableChat) {
         type: 'list',
         name: 'choices',
         message: 'Do you want to attack?',
-        choices: ['Yes', 'No', 'Chat'],
+        choices: ['Yes', 'No'],
       },
     ]);
 
@@ -204,8 +204,6 @@ async function startGameLogic(client, username, enableChat) {
       //   acknowledgedAttack(payload, client);
       //   sendCoordinates(client);
       // }
-    } else if (attackAnswers.choices === 'Chat') {
-      startChatMessaging();
     } else {
       console.log('Goodbye');
     }
