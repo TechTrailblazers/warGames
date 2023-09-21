@@ -12,7 +12,7 @@ let payload;
 let gameOver = false;
 let userHealth = 10000; // Initialize user's health to 10000
 let computerHealth = 10000;
-let successChance = Math.random();
+let successChance = 0.4 + Math.random() * 0.3;
 // function setNumberOfPlayers(players) {
 //   numberOfPlayers = players;
 //   console.log(`Number of players set to: ${numberOfPlayers}`);
@@ -416,7 +416,7 @@ async function askToPlayAgain() {
   gameOver = false;
   userHealth = 10000; // Initialize user's health to 10000
   computerHealth = 10000;
-  successChance = Math.random();
+  successChance = 0.4 + Math.random() * 0.3;
   if (playAgainAnswers.playAgain === 'Yes') {
     // Start the game again
 
