@@ -12,6 +12,7 @@ let payload;
 let gameOver = false;
 let userHealth = 10000; // Initialize user's health to 10000
 let computerHealth = 10000;
+let isDefending = false;
 let successChance = 0.4 + Math.random() * 0.3;
 // function setNumberOfPlayers(players) {
 //   numberOfPlayers = players;
@@ -329,18 +330,23 @@ async function attackChanceLoop(client, userAttackPayload) {
         {
           type: 'list',
           name: 'sendAttack',
-          message: 'Do you want to send another attack?',
-          choices: ['Yes', 'No', 'Chat'],
+          message: 'Do you want to attack or defend?',
+          choices: ['Attack', 'Defend', 'Chat', 'Exit'],
         },
       ]);
-      if (sendAnotherAttackAnswers.sendAttack === 'Yes') {
+      if (sendAnotherAttackAnswers.sendAttack === 'Attack') {
         attackChanceLoop();
       }
       if (sendAnotherAttackAnswers.sendAttack === 'Chat') {
         console.log('answer was chat');
         startChatMessaging();
         return;
-      } else if (sendAnotherAttackAnswers.sendAttack === 'No') {
+      }
+      if (sendAnotherAttackAnswers.sendAttack === 'Defend') {
+        successChance = defenseSuccessChance(successChance);
+        console.log('You are defending');
+        attackChanceLoop();
+      } else if (sendAnotherAttackAnswers.sendAttack === 'Exit') {
         console.log('Goodbye');
         gameOver = true; // Set game over state to true
         return; // No need to throw an error here
@@ -351,6 +357,16 @@ async function attackChanceLoop(client, userAttackPayload) {
   // Check for game over and prompt to play again
   if (gameOver) {
     await askToPlayAgain();
+  }
+}
+function defenseSuccessChance() {
+  if (isDefending) {
+    // If the player is in a defensive stance, reduce the success chance
+    // You can adjust the reduction factor as needed
+    return successChance - 0.3; // Reduces the success chance by 20%
+  } else {
+    // If the player is not defending, use the base success chance
+    return successChance;
   }
 }
 
