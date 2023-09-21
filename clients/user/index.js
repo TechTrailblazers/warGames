@@ -112,10 +112,10 @@ async function login() {
       password = loginAnswers.password;
 
       console.log(`Logged in as ${username}`);
-      client.emit(EventNames.ready, { username });
+
       // startUser(client);
 
-      startPlayer1(client, username);
+      // startPlayer1(client, username);
       // Check if chat messaging is enabled and start chat messaging
       // if (startGameAnswers.enableChat) {
       // Start the chat messaging system
@@ -433,7 +433,7 @@ function disconnect() {
   client.disconnect();
 }
 
-function startPlayer1(client, username) {
+function startPlayer1() {
   // console.log(`${username} has entered the game.`);
   client.emit(EventNames.ready, 'user1');
 
@@ -447,7 +447,7 @@ function startPlayer1(client, username) {
   client.on(EventNames.gameStart, () => console.log('Game has started 365'));
 }
 login();
-startPlayer1(client);
+startPlayer1();
 module.exports = {
   startPlayer1,
   // startChatMessaging,
