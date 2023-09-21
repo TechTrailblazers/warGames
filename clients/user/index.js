@@ -433,7 +433,7 @@ function disconnect() {
   client.disconnect();
 }
 
-function startPlayer1(client, username) {
+function startPlayer1() {
   // console.log(`${username} has entered the game.`);
   client.emit(EventNames.ready, 'user1');
 

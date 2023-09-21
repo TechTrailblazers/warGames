@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const { startChatMessaging } = require('./handler'); // Replace with the actual module path
+const { startChatMessaging } = require('./index'); // Replace with the actual module path
 
 // Mock user input using Jest's built-in functionality
 jest.mock('inquirer');
